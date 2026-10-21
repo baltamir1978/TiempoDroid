@@ -37,7 +37,7 @@ entera en el emulador.
 | WidgetKit + App Group | Glance; los widgets leen la misma caché que la app, en el mismo proceso |
 | `WidgetConfigIntent` | Actividad de configuración del widget (ciudad y fondo) |
 | `BackgroundTasks` | WorkManager |
-| CoreLocation + geocodificador de Apple | `FusedLocationProviderClient` + `Geocoder`; el nomenclátor sigue eligiendo el núcleo |
+| CoreLocation + geocodificador de Apple | **`LocationManager`**, no `FusedLocationProviderClient`, que es de Google Play (GrapheneOS). **`Geocoder` tampoco sirve**: sin Google Play no tiene servicio detrás. No hace falta: el nomenclátor y los municipios de AEMET y del IPMA ya van dentro de la app, así que la ubicación se resuelve sin red buscando el núcleo más cercano |
 | Swift Charts | Vico |
 | `SunMoonService`, `MoonPhasesService` | Traducir los cálculos o usar una librería (p. ej. `commons-suncalc`) y comprobarla contra la app de iOS |
 | OAuth de Netatmo | AppAuth, compartido con CalefaccionDroid |
