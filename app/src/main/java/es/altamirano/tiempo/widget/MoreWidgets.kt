@@ -40,7 +40,6 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import es.altamirano.tiempo.app
@@ -245,7 +244,7 @@ class SunMoonWidget : GlanceAppWidget() {
         val moon = SunMoon.moon(today, loc.lat, loc.lon, zone, now)
         val next = SunMoon.nextPhases(now, 1).firstOrNull()
         fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
-        val nextWhen = next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", Locale("es", "ES")))
+        val nextWhen = next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", es.altamirano.tiempo.core.I18n.locale()))
         provideContent {
             val wide = LocalSize.current.width >= 250.dp
             val white = ColorProvider(Color.White); val soft = ColorProvider(Color.White.copy(alpha = 0.75f))

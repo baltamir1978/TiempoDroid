@@ -38,7 +38,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
@@ -127,7 +126,7 @@ fun ActualTab() {
             val interior = s.data - "Pressure"
             val batteries = buildMap { st.exterior?.batteryPercent?.let { put("Temperature", it) }; st.rain?.batteryPercent?.let { put("sum_rain_1", it) } }
             val stamp = s.lastStatusStore?.let { Instant.ofEpochSecond(it).atZone(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Locale("es", "ES"))) }
+                .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(es.altamirano.tiempo.core.I18n.locale())) }
             item { SectionHeader("Exterior", stamp) }
             item { Grid(exterior, batteries, ChartSource.EXTERIOR) { src, type -> chart = src.name to type } }
             val note = when {
@@ -430,8 +429,8 @@ fun NetatmoSettings() {
                     androidx.compose.material3.RadioButton(selected == d.id, { app.netatmo.apply(d); selected = d.id; scope.launch { app.netatmo.load(); app.snapshots.requestUpdate() } })
                     Column {
                         Text(d.stationName ?: d.id, fontSize = 14.sp)
-                        Text(d.label + " · " + listOfNotNull(d.modules.firstOrNull { it.type == "NAModule1" }?.let { "exterior" },
-                            d.modules.firstOrNull { it.type == "NAModule3" }?.let { "pluviómetro" }).joinToString(", ").ifEmpty { "sin módulos" },
+                        Text(d.label + " · " + listOfNotNull(d.modules.firstOrNull { it.type == "NAModule1" }?.let { es.altamirano.tiempo.core.tr("exterior") },
+                            d.modules.firstOrNull { it.type == "NAModule3" }?.let { es.altamirano.tiempo.core.tr("pluviómetro") }).joinToString(", ").ifEmpty { es.altamirano.tiempo.core.tr("sin módulos") },
                             fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

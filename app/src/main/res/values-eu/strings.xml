@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_weather_label">Eguraldia</string>
+    <string name="widget_sunmoon_label">Eguzkia eta Ilargia</string>
+    <string name="widget_tides_label">Mareak</string>
+    <string name="widget_desc">Tenperatura, zerua, maximoa eta minimoa eta hurrengo orduak</string>
+    <string name="widget_netatmo_desc">Zure Netatmo estazioa: kanpoko eta barruko tenperatura eta hezetasuna, presioa, CO₂, zarata eta euria</string>
+    <string name="widget_sunmoon_desc">Eguzkiaren irteera eta sartzea, ilargiaren fasea eta hurrengo ilargia</string>
+    <string name="widget_tides_desc">Aukeratzen duzun portuko oraingo marea eta hurrengo itsasgora edo itsasbehera</string>
+</resources>

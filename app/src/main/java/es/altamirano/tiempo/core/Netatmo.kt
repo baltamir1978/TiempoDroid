@@ -159,7 +159,7 @@ object NetatmoCharts {
         else -> if (source == ChartSource.EXTERIOR) "Exterior" else "Interior"
     }
 
-    fun build(points: List<Pair<Long, Double>>, period: ChartPeriod, isRain: Boolean, zone: ZoneId, locale: Locale = Locale("es", "ES")): ChartData? {
+    fun build(points: List<Pair<Long, Double>>, period: ChartPeriod, isRain: Boolean, zone: ZoneId, locale: Locale = I18n.locale()): ChartData? {
         if (points.isEmpty()) return null
         val fmt = DateTimeFormatter.ofPattern(if (period.scale == "3hours") "d/M HH'h'" else "d MMM", locale)
         val labels = points.map { Instant.ofEpochSecond(it.first).atZone(zone).format(fmt) }

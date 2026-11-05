@@ -73,7 +73,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -116,7 +115,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Spanish = Locale("es", "ES")
+/** El idioma de las fechas: el de la app (`I18n`). */
+private val Spanish: Locale get() = es.altamirano.tiempo.core.I18n.locale()
 private val hhmm = DateTimeFormatter.ofPattern("HH:mm")
 
 /** Lo que pide abrir un widget (`WidgetDeepLink`): la pestaña y, en Mareas, bajar hasta su tarjeta. */
@@ -145,9 +145,9 @@ class MainActivity : ComponentActivity() {
                     app.netatmo.api.handleCallback(uri)
                     app.netatmo.recheck()
                     app.netatmo.load(force = true)
-                    Toast.makeText(this@MainActivity, "Sesión de Netatmo iniciada", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, es.altamirano.tiempo.core.tr("Sesión de Netatmo iniciada"), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(this@MainActivity, e.message ?: "No se pudo iniciar sesión", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, es.altamirano.tiempo.core.tr(e.message ?: "No se pudo iniciar sesión"), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -402,7 +402,7 @@ private fun MoonCalendar(today: LocalDate, zone: ZoneId, phases: List<PhaseEvent
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(Modifier.padding(horizontal = 10.dp).padding(top = 8.dp)) {
-                listOf("L", "M", "X", "J", "V", "S", "D").forEach {
+                java.time.DayOfWeek.entries.map { it.getDisplayName(java.time.format.TextStyle.NARROW, Spanish).uppercase(Spanish) }.forEach {
                     Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -582,7 +582,7 @@ private fun SettingsTab() {
                         Row(Modifier.fillMaxWidth().clickable { app.settings.setScale(s); app.snapshots.requestUpdate() }.padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(s == scale, { app.settings.setScale(s); app.snapshots.requestUpdate() })
-                            Text(s.label + if (s == TempScale.DEFAULT) " (por omisión)" else "", Modifier.weight(1f), fontSize = 14.sp)
+                            Text(if (s == TempScale.DEFAULT) "${s.label} (por omisión)" else s.label, Modifier.weight(1f), fontSize = 14.sp)
                             // Las muestras de la escala, con su degradado de verdad, de −5° a 40°.
                             Row(Modifier.padding(end = 8.dp)) {
                                 listOf(-5.0, 5.0, 15.0, 22.0, 28.0, 35.0, 40.0).forEach { t ->

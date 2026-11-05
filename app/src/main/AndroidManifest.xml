@@ -18,7 +18,8 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Tiempo">
+        android:theme="@style/Theme.Tiempo"
+        android:localeConfig="@xml/locales_config">
 
         <activity android:name=".ui.MainActivity" android:exported="true" android:launchMode="singleTask">
             <intent-filter>
@@ -44,7 +45,7 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" /></intent-filter>
         </activity>
 
-        <receiver android:name=".widget.WeatherWidgetReceiver" android:exported="true" android:label="Tiempo">
+        <receiver android:name=".widget.WeatherWidgetReceiver" android:exported="true" android:label="@string/widget_weather_label">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_weather" />
         </receiver>
@@ -52,11 +53,11 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_netatmo" />
         </receiver>
-        <receiver android:name=".widget.SunMoonWidgetReceiver" android:exported="true" android:label="Sol y Luna">
+        <receiver android:name=".widget.SunMoonWidgetReceiver" android:exported="true" android:label="@string/widget_sunmoon_label">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_sunmoon" />
         </receiver>
-        <receiver android:name=".widget.TidesWidgetReceiver" android:exported="true" android:label="Mareas">
+        <receiver android:name=".widget.TidesWidgetReceiver" android:exported="true" android:label="@string/widget_tides_label">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_tides" />
         </receiver>

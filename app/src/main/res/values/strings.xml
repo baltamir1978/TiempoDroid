@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Tiempo ES</string>
+    <string name="widget_weather_label">Tiempo</string>
+    <string name="widget_sunmoon_label">Sol y Luna</string>
+    <string name="widget_tides_label">Mareas</string>
     <string name="widget_desc">Temperatura, cielo, máxima y mínima y las próximas horas</string>
     <string name="widget_netatmo_desc">Tu estación Netatmo: temperatura y humedad exterior e interior, presión, CO₂, ruido y lluvia</string>
     <string name="widget_sunmoon_desc">Orto y ocaso del sol, fase lunar y próxima luna</string>

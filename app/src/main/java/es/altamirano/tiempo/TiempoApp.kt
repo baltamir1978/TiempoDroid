@@ -2,6 +2,7 @@ package es.altamirano.tiempo
 
 import android.app.Application
 import android.content.Context
+import es.altamirano.tiempo.core.I18n
 import es.altamirano.tiempo.core.Places
 import es.altamirano.tiempo.data.LocationStore
 import es.altamirano.tiempo.data.NetatmoRepo
@@ -31,6 +32,7 @@ class TiempoApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        I18n.loader = { lang -> runCatching { assets.open("i18n/$lang.tsv").use { it.readBytes().decodeToString() } }.getOrNull() }
         settings = Settings(this)
         locations = LocationStore(this) { places }
         snapshots = WidgetSnapshots(this)

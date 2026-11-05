@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_weather_label">Temps</string>
+    <string name="widget_sunmoon_label">Sol i Lluna</string>
+    <string name="widget_tides_label">Marees</string>
+    <string name="widget_desc">Temperatura, cel, màxima i mínima i les pròximes hores</string>
+    <string name="widget_netatmo_desc">La teva estació Netatmo: temperatura i humitat exterior i interior, pressió, CO₂, soroll i pluja</string>
+    <string name="widget_sunmoon_desc">Sortida i posta del sol, fase lunar i pròxima lluna</string>
+    <string name="widget_tides_desc">La marea d\'ara al port que triïs i la pròxima plenamar o baixamar</string>
+</resources>

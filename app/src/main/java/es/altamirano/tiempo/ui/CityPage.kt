@@ -37,7 +37,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,7 +75,8 @@ import java.time.format.FormatStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Spanish = Locale("es", "ES")
+/** El idioma de las fechas: el de la app (`I18n`). */
+private val Spanish: Locale get() = es.altamirano.tiempo.core.I18n.locale()
 
 @Composable
 fun CityPage(loc: SavedLocation, w: CityWeather) {
@@ -196,9 +196,10 @@ private fun PlaceCard(loc: SavedLocation) {
                 Column(Modifier.weight(1f)) {
                     Text((if (loc.isCurrent) "📍 " else "") + loc.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     val app = LocalContext.current.app
-                    val sub = if (loc.isPortuguese) listOfNotNull(loc.province?.takeIf { it != loc.name }, app.weather.portugalLabel(loc)).joinToString(" · ")
+                    val tr: (String) -> String = { es.altamirano.tiempo.core.tr(it) }
+                    val sub = if (loc.isPortuguese) listOfNotNull(loc.province?.takeIf { it != loc.name }?.let(tr), app.weather.portugalLabel(loc)).joinToString(" · ")
                         else listOfNotNull(loc.province?.takeIf { it != loc.name }, loc.stationName?.let { s ->
-                        "Estación $s" + (loc.stationKm?.let { " · a ${km(it)} km" } ?: "") }).joinToString(" · ")
+                        tr(loc.stationKm?.let { "Estación $s · a ${km(it)} km" } ?: "Estación $s") }).joinToString(" · ")
                     if (sub.isNotEmpty()) Text(sub, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text("›", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

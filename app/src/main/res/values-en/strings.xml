@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_weather_label">Weather</string>
+    <string name="widget_sunmoon_label">Sun and Moon</string>
+    <string name="widget_tides_label">Tides</string>
+    <string name="widget_desc">Temperature, sky, high and low and the coming hours</string>
+    <string name="widget_netatmo_desc">Your Netatmo station: outdoor and indoor temperature and humidity, pressure, CO₂, noise and rain</string>
+    <string name="widget_sunmoon_desc">Sunrise and sunset, moon phase and next moon</string>
+    <string name="widget_tides_desc">The current tide at the port you choose and the next high or low tide</string>
+</resources>

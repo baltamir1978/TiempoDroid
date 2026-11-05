@@ -1,0 +1,323 @@
+# es	en	gl	eu	ca — la clave es el español; {} es un hueco ({1}, {2}… para cambiar el orden).
+# Las de iOS (Localizable.xcstrings) se copiaron tal cual. Generar los ficheros: python3 Tools/i18n.py
+3 Meses	3 months	3 meses	3 hilabete	3 mesos
+A 0.5° · muy juntos, cerca del Sol	0.5° apart · very close, near the Sun	A 0,5° · moi xuntos, preto do Sol	0,5°-ra · oso elkarrekin, Eguzkitik gertu	A 0,5° · molt junts, a prop del Sol
+A 1.2° · buena visibilidad	1.2° apart · good visibility	A 1,2° · boa visibilidade	1,2°-ra · ikusgarritasun ona	A 1,2° · bona visibilitat
+A 1.6° al anochecer · par más brillante de 2026	1.6° apart at dusk · brightest pair of 2026	A 1,6° ao anoitecer · parella máis brillante de 2026	1,6°-ra ilunabarrean · 2026ko bikote distiratsuena	A 1,6° al vespre · parella més brillant del 2026
+A 3.7° al amanecer	3.7° apart at dawn	A 3,7° ao amencer	3,7°-ra egunsentian	A 3,7° a l'alba
+A 4.2° al amanecer	4.2° apart at dawn	A 4,2° ao amencer	4,2°-ra egunsentian	A 4,2° a l'alba
+A 4.6° al anochecer	4.6° apart at dusk	A 4,6° ao anoitecer	4,6°-ra ilunabarrean	A 4,6° al vespre
+A 5° al amanecer	5° apart at dawn	A 5° ao amencer	5°-ra egunsentian	A 5° a l'alba
+a {} km	{} km away	a {} km	{} km-ra	a {} km
+a {} km de {}	{1} km from {2}	a {} km de {}	{2}(e)tik {1} km-ra	a {} km de {}
+a {} km · {} m	{} km away · {} m	a {} km · {} m	{} km-ra · {} m	a {} km · {} m
+Abedul	Birch	Bidueiro	Urkia	Bedoll
+Abre la app para actualizar	Open the app to refresh	Abre a app para actualizar	Ireki aplikazioa eguneratzeko	Obre l'app per actualitzar
+Abre la app para cargar el tiempo	Open the app to load the weather	Abre a app para cargar o tempo	Ireki aplikazioa eguraldia kargatzeko	Obre l'app per carregar el temps
+Aceptar	OK	Aceptar	Ados	D'acord
+Act. {}	Upd. {}	Act. {}	Eguner. {}	Act. {}
+Actual	Current	Actual	Unekoa	Actual
+Actualizado {}	Updated {}	Actualizado {}	Eguneratuta {}	Actualitzat {}
+Actualizar	Refresh	Actualizar	Eguneratu	Actualitza
+Ahora	Now	Agora	Orain	Ara
+Aire · Polen · UV	Air · Pollen · UV	Aire · Pole · UV	Airea · Polena · UV	Aire · Pol·len · UV
+Ajustes	Settings	Axustes	Ezarpenak	Ajustos
+Aliso	Alder	Ameneiro	Haltza	Vern
+Alto	High	Alto	Altua	Alt
+Aludes	Avalanches	Aludes	Elur-jausiak	Allaus
+Amanecer más tardío	Latest sunrise	Amencer máis tardío	Egunsentirik berantiarrena	Sortida de sol més tardana
+Amanecer más temprano	Earliest sunrise	Amencer máis cedo	Egunsentirik goiztiarrena	Sortida de sol més d'hora
+amarillo	yellow	amarelo	horia	groc
+Ambrosía	Ragweed	Ambrosía	Anbrosia	Ambròsia
+Anular, visible N. África, Asia	Annular, visible from N. Africa, Asia	Anular, visible no N. de África, Asia	Eraztunduna, Ipar Afrikatik eta Asiatik ikusgai	Anular, visible al N. d'Àfrica, Àsia
+Artemisa	Mugwort	Artemisa	Asentsio-belarra	Artemísia
+Atardecer más tardío	Latest sunset	Solpor máis tardío	Ilunabarrik berantiarrena	Posta de sol més tardana
+Atardecer más temprano	Earliest sunset	Solpor máis cedo	Ilunabarrik goiztiarrena	Posta de sol més d'hora
+Automática	Automatic	Automática	Automatikoa	Automàtica
+Aviso	Warning	Aviso	Abisua	Avís
+Año	Year	Ano	Urtea	Any
+Bajando	Falling	Baixando	Jaisten	Baixant
+Bajo	Low	Baixo	Baxua	Baix
+Blanco en el medio	White in the middle	Branco no medio	Zuria erdian	Blanc al mig
+Bruma	Haze	Brétema	Lainoa	Calitja
+Buena	Good	Boa	Ona	Bona
+Buscar municipio o pueblo	Search town or village	Buscar concello ou lugar	Bilatu udalerria edo herria	Cerca municipi o poble
+Calefacción no está instalada: Tiempo necesita su propia sesión.	Calefacción isn't installed: Tiempo needs its own session.	Calefacción non está instalada: Tiempo necesita a súa propia sesión.	Calefacción ez dago instalatuta: Tiempok bere saioa behar du.	Calefacción no està instal·lada: Tiempo necessita la seva pròpia sessió.
+Calidad del aire	Air quality	Calidade do aire	Airearen kalitatea	Qualitat de l'aire
+Calima	Dust haze	Calima	Kalima	Calima
+Cancelar	Cancel	Cancelar	Utzi	Cancel·la
+Cargando…	Loading…	Cargando…	Kargatzen…	Carregant…
+Cerca de {}	Near {}	Preto de {}	{} inguruan	A prop de {}
+Cerrar sesión	Sign out	Pechar sesión	Itxi saioa	Tanca la sessió
+Chubascos	Showers	Chuvascos	Zaparradak	Ruixats
+Chubascos con tormenta	Showers and thunderstorms	Chuvascos con treboada	Zaparradak eta ekaitza	Ruixats amb tempesta
+Chubascos de nieve	Snow showers	Chuvascos de neve	Elur-zaparradak	Ruixats de neu
+Ciudad	City	Cidade	Hiria	Ciutat
+Ciudades	Cities	Cidades	Hiriak	Ciutats
+Clave	Key	Clave	Gakoa	Clau
+Color según la temperatura	Colour by temperature	Cor segundo a temperatura	Kolorea tenperaturaren arabera	Color segons la temperatura
+Configura Netatmo en Ajustes	Set up Netatmo in Settings	Configura Netatmo en Axustes	Konfiguratu Netatmo Ezarpenetan	Configura Netatmo a Ajustos
+Conjunción Marte–Júpiter	Mars–Jupiter conjunction	Conxunción Marte–Xúpiter	Marte–Jupiter elkartzea	Conjunció Mart–Júpiter
+Conjunción Mercurio–Júpiter	Mercury–Jupiter conjunction	Conxunción Mercurio–Xúpiter	Merkurio–Jupiter elkartzea	Conjunció Mercuri–Júpiter
+Conjunción Mercurio–Venus	Mercury–Venus conjunction	Conxunción Mercurio–Venus	Merkurio–Artizarra elkartzea	Conjunció Mercuri–Venus
+Conjunción Venus–Júpiter	Venus–Jupiter conjunction	Conxunción Venus–Xúpiter	Artizarra–Jupiter elkartzea	Conjunció Venus–Júpiter
+Conjunción Venus–Mercurio	Venus–Mercury conjunction	Conxunción Venus–Mercurio	Artizarra–Merkurio elkartzea	Conjunció Venus–Mercuri
+Costeros	Coastal	Costeiros	Kostaldekoak	Costaners
+Cota de nieve	Snow level	Cota de neve	Elur-maila	Cota de neu
+CO₂ ppm	CO₂ ppm	CO₂ ppm	CO₂ ppm	CO₂ ppm
+Creciente iluminante	Waxing crescent	Crecente	Ilgora	Creixent
+Cuadrántidas	Quadrantids	Cuadrántidas	Kuadrantidak	Quadràntides
+Cuarto creciente	First quarter	Cuarto crecente	Ilgora erdia	Quart creixent
+Cuarto menguante	Last quarter	Cuarto minguante	Ilbehera erdia	Quart minvant
+Cubierto	Overcast	Cuberto	Estalia	Cobert
+Cubierto con lluvia	Overcast with rain	Cuberto con choiva	Estalia eta euria	Cobert amb pluja
+Cubierto con lluvia escasa	Overcast with light rain	Cuberto con choiva escasa	Estalia eta euri gutxi	Cobert amb pluja escassa
+Cubierto con nieve	Overcast with snow	Cuberto con neve	Estalia eta elurra	Cobert amb neu
+Cubierto con nieve escasa	Overcast with light snow	Cuberto con neve escasa	Estalia eta elur gutxi	Cobert amb neu escassa
+Cubierto con tormenta	Overcast with thunderstorms	Cuberto con treboada	Estalia eta ekaitza	Cobert amb tempesta
+Cubierto con tormenta y lluvia escasa	Overcast with thunderstorms and light rain	Cuberto con treboada e choiva escasa	Estalia, ekaitza eta euri gutxi	Cobert amb tempesta i pluja escassa
+Datos	Data	Datos	Datuak	Dades
+Delta Acuáridas	Delta Aquariids	Delta Acuáridas	Delta Akuaridak	Delta Aquàrides
+Desde hoy las tardes empiezan a acortarse	From today evenings start getting shorter	Desde hoxe as tardes empezan a acurtarse	Gaurtik aurrera arratsaldeak laburtzen hasten dira	Des d'avui les tardes comencen a escurçar-se
+Desde hoy las tardes empiezan a alargarse	From today evenings start getting longer	Desde hoxe as tardes empezan a alongarse	Gaurtik aurrera arratsaldeak luzatzen hasten dira	Des d'avui les tardes comencen a allargar-se
+Desde hoy los amaneceres empiezan a adelantarse	From today sunrises start getting earlier	Desde hoxe os amenceres empezan a adiantarse	Gaurtik aurrera egunsentiak aurreratzen hasten dira	Des d'avui les sortides de sol comencen a avançar-se
+Desde hoy los amaneceres empiezan a retrasarse	From today sunrises start getting later	Desde hoxe os amenceres empezan a atrasarse	Gaurtik aurrera egunsentiak berandutzen hasten dira	Des d'avui les sortides de sol comencen a endarrerir-se
+Deshielos	Thaws	Desxeos	Urtzeak	Desglaços
+Despejado	Clear	Despexado	Oskarbi	Serè
+Detalles de hoy	Today's details	Detalles de hoxe	Gaurko xehetasunak	Detalls d'avui
+Detectar de nuevo	Detect again	Detectar de novo	Detektatu berriro	Detecta de nou
+Duración del día: {} h {} min	Day length: {} h {} min	Duración do día: {} h {} min	Egunaren iraupena: {} h {} min	Durada del dia: {} h {} min
+Días lluvia	Rainy days	Días de choiva	Euri-egunak	Dies de pluja
+Eclipse de luna parcial	Partial lunar eclipse	Eclipse parcial de lúa	Ilargi-eklipse partziala	Eclipsi parcial de lluna
+Eclipse de luna penumbral	Penumbral lunar eclipse	Eclipse de lúa penumbral	Ilargi-eklipse penunbrala	Eclipsi de lluna penombral
+Eclipse de luna total	Total lunar eclipse	Eclipse total de lúa	Ilargi-eklipse osoa	Eclipsi total de lluna
+Eclipse de sol anular	Annular solar eclipse	Eclipse anular de sol	Eguzki-eklipse eraztunduna	Eclipsi anular de sol
+Eclipse de sol parcial	Partial solar eclipse	Eclipse parcial de sol	Eguzki-eklipse partziala	Eclipsi parcial de sol
+Eclipse de sol total	Total solar eclipse	Eclipse total de sol	Eguzki-eklipse osoa	Eclipsi total de sol
+El IPMA solo publica previsión para 35 localidades. Es la fuente oficial, pero desde {} km su previsión ya describe otro sitio: Open-Meteo modela tu punto exacto. Los avisos son siempre del IPMA.	IPMA only publishes forecasts for 35 locations. It is the official source, but from {} km away its forecast already describes somewhere else: Open-Meteo models your exact point. Warnings always come from IPMA.	O IPMA só publica predición para 35 localidades. É a fonte oficial, pero desde {} km a súa predición xa describe outro sitio: Open-Meteo modela o teu punto exacto. Os avisos son sempre do IPMA.	IPMAk 35 herritarako baino ez du iragarpenik argitaratzen. Iturri ofiziala da, baina {} km-tik aurrera bere iragarpenak beste leku bat deskribatzen du jada: Open-Meteok zure puntu zehatza modelatzen du. Abisuak beti IPMArenak dira.	L'IPMA només publica previsió per a 35 localitats. És la font oficial, però des de {} km la seva previsió ja descriu un altre lloc: Open-Meteo modela el teu punt exacte. Els avisos sempre són de l'IPMA.
+El módulo no devolvió medidas.	The module returned no measurements.	O módulo non devolveu medicións.	Moduluak ez du neurketarik itzuli.	El mòdul no ha retornat mesures.
+El pluviómetro configurado ya no está en la estación.	The configured rain gauge is no longer part of the station.	O pluviómetro configurado xa non está na estación.	Konfiguratutako euri-neurgailua ez dago jada estazioan.	El pluviòmetre configurat ja no és a l'estació.
+El pluviómetro no envía datos (sin cobertura o sin pilas).	The rain gauge is not sending data (out of range or out of battery).	O pluviómetro non envía datos (sen cobertura ou sen pilas).	Euri-neurgailuak ez du daturik bidaltzen (estaldurarik gabe edo pilarik gabe).	El pluviòmetre no envia dades (sense cobertura o sense piles).
+Equinoccio de otoño	Autumn equinox	Equinoccio de outono	Udazkeneko ekinokzioa	Equinocci de tardor
+Equinoccio de primavera	Spring equinox	Equinoccio de primavera	Udaberriko ekinokzioa	Equinocci de primavera
+Error de Netatmo	Netatmo error	Erro de Netatmo	Netatmo errorea	Error de Netatmo
+Estaciones: {}	Stations: {}	Estacións: {}	Estazioak: {}	Estacions: {}
+Estación	Station	Estación	Estazioa	Estació
+Estación meteorológica	Weather station	Estación meteorolóxica	Eguraldi-estazioa	Estació meteorològica
+Estación {}	{} station	Estación {}	{} estazioa	Estació {}
+Estación {} · a {} km	{1} station · {2} km away	Estación {} · a {} km	{1} estazioa · {2} km-ra	Estació {} · a {} km
+Estación · {}	Station · {}	Estación · {}	Estazioa · {}	Estació · {}
+Estado de la mar	Sea conditions	Estado do mar	Itsasoaren egoera	Estat de la mar
+Eta Acuáridas	Eta Aquariids	Eta Acuáridas	Eta Akuaridak	Eta Aquàrides
+Eventos astronómicos	Astronomical events	Eventos astronómicos	Gertaera astronomikoak	Esdeveniments astronòmics
+Exterior	Outdoor	Exterior	Kanpoaldea	Exterior
+exterior	outdoor	exterior	kanpokoa	exterior
+Extrem. pobre	Extremely poor	Extrem. mala	Oso-oso txarra	Extrem. pobra
+Extremo	Extreme	Extremo	Muturrekoa	Extrem
+Fenómenos costeros	Coastal events	Fenómenos costeiros	Kostaldeko fenomenoak	Fenòmens costaners
+Fuente	Source	Fonte	Iturria	Font
+Fuente: {}	Source: {}	Fonte: {}	Iturria: {}	Font: {}
+Galernas	Galernas	Galernas	Enbatak	Galernes
+Gemínidas	Geminids	Xemínidas	Geminidak	Gemínides
+Gibosa creciente	Waxing gibbous	Xibosa crecente	Ilgora konkorra	Gibosa creixent
+Gibosa menguante	Waning gibbous	Xibosa minguante	Ilbehera konkorra	Gibosa minvant
+Gramíneas	Grasses	Gramíneas	Gramineoak	Gramínies
+Granizo	Hail	Sarabia	Txingorra	Calamarsa
+Guardar	Save	Gardar	Gorde	Desa
+Helada	Frost	Xeada	Izotza	Gelada
+Hoy	Today	Hoxe	Gaur	Avui
+hoy {}	today {}	hoxe {}	gaur {}	avui {}
+Humedad	Humidity	Humidade	Hezetasuna	Humitat
+Humedad ext.	Outdoor humidity	Humidade ext.	Kanpoko hezetasuna	Humitat ext.
+Humedad relativa	Relative humidity	Humidade relativa	Hezetasun erlatiboa	Humitat relativa
+Iniciar sesión	Sign in	Iniciar sesión	Hasi saioa	Inicia la sessió
+Interior	Indoor	Interior	Barrualdea	Interior
+Intervalos nubosos	Cloudy intervals	Intervalos nubrados	Hodei-tarteak	Intervals de núvols
+Intervalos nubosos con lluvia	Cloudy intervals with rain	Intervalos nubrados con choiva	Hodei-tarteak eta euria	Intervals de núvols amb pluja
+Intervalos nubosos con lluvia escasa	Cloudy intervals with light rain	Intervalos nubrados con choiva escasa	Hodei-tarteak eta euri gutxi	Intervals de núvols amb pluja escassa
+Intervalos nubosos con nieve	Cloudy intervals with snow	Intervalos nubrados con neve	Hodei-tarteak eta elurra	Intervals de núvols amb neu
+Intervalos nubosos con nieve escasa	Cloudy intervals with light snow	Intervalos nubrados con neve escasa	Hodei-tarteak eta elur gutxi	Intervals de núvols amb neu escassa
+Intervalos nubosos con tormenta	Cloudy intervals with thunderstorms	Intervalos nubrados con treboada	Hodei-tarteak eta ekaitza	Intervals de núvols amb tempesta
+Intervalos nubosos con tormenta y lluvia escasa	Cloudy intervals with thunderstorms and light rain	Intervalos nubrados con treboada e choiva escasa	Hodei-tarteak, ekaitza eta euri gutxi	Intervals de núvols amb tempesta i pluja escassa
+Inténtalo en unos minutos con ↻.	Try again in a few minutes with ↻.	Téntao dentro duns minutos con ↻.	Saiatu berriro minutu batzuk barru ↻ sakatuta.	Torna-ho a provar d'aquí uns minuts amb ↻.
+IPMA · {}	IPMA · {}	IPMA · {}	IPMA · {}	IPMA · {}
+Júpiter en oposición	Jupiter at opposition	Xúpiter en oposición	Jupiter oposizioan	Júpiter en oposició
+La más cercana	The nearest	A máis próxima	Hurbilena	La més propera
+La más cercana: {}	The nearest: {}	A máis próxima: {}	Hurbilena: {}	La més propera: {}
+La ubicación actual se resuelve en el móvil, sin geocodificador: municipio de AEMET más cercano y el pueblo del nomenclátor.	Your current location is resolved on the phone, without a geocoder: the nearest AEMET municipality and the village from the gazetteer.	A localización actual resólvese no móbil, sen xeocodificador: concello de AEMET máis próximo e o lugar do nomenclátor.	Uneko kokapena telefonoan bertan ebazten da, geokodetzailerik gabe: AEMETen udalerririk hurbilena eta izendegiko herria.	La ubicació actual es resol al mòbil, sense geocodificador: el municipi d'AEMET més proper i el poble del nomenclàtor.
+Las credenciales salen de dev.netatmo.com. Para iniciar sesión desde aquí, añade allí la Redirect URI «{}»; si no, pega un refresh token (como en iOS).	The credentials come from dev.netatmo.com. To sign in from here, add the Redirect URI “{}” there; otherwise, paste a refresh token (as on iOS).	As credenciais saen de dev.netatmo.com. Para iniciar sesión desde aquí, engade alí a Redirect URI «{}»; se non, pega un refresh token (como en iOS).	Kredentzialak dev.netatmo.com-etik datoz. Hemendik saioa hasteko, gehitu han «{}» Redirect URIa; bestela, itsatsi refresh token bat (iOSen bezala).	Les credencials surten de dev.netatmo.com. Per iniciar sessió des d'aquí, afegeix-hi la Redirect URI «{}»; si no, enganxa un refresh token (com a iOS).
+Leónidas	Leonids	Leónidas	Leonidak	Leònides
+Listo	Done	Feito	Eginda	Fet
+Llovizna	Drizzle	Orballo	Zirimiria	Plugim
+Lluvia	Rain	Choiva	Euria	Pluja
+Lluvia 1h	Rain 1h	Choiva 1h	Euria 1h	Pluja 1h
+Lluvia de {}	{} meteor shower	Chuvia de {}	{} izar-euria	Pluja de {}
+Lluvia débil	Light rain	Choiva feble	Euri ahula	Pluja feble
+Lluvia fuerte	Heavy rain	Choiva forte	Euri handia	Pluja forta
+Lluvia y nieve	Rain and snow	Choiva e neve	Euria eta elurra	Pluja i neu
+Lluvia última hora	Rain last hour	Choiva última hora	Euria azken orduan	Pluja darrera hora
+Lluvias	Rain	Choivas	Euriak	Pluges
+Los avisos meteorológicos son siempre del IPMA.	Weather warnings always come from IPMA.	Os avisos meteorolóxicos son sempre do IPMA.	Eguraldi-abisuak beti IPMArenak dira.	Els avisos meteorològics sempre són de l'IPMA.
+Los módulos se detectan solos desde tu cuenta Netatmo. Netatmo limita las consultas periódicas: la estación se pide como mucho cada 10 minutos.	Modules are detected automatically from your Netatmo account. Netatmo limits periodic queries: the station is fetched at most every 10 minutes.	Os módulos detéctanse sós desde a túa conta Netatmo. Netatmo limita as consultas periódicas: a estación pídese como moito cada 10 minutos.	Moduluak zure Netatmo kontutik automatikoki hautematen dira. Netatmok kontsulta periodikoak mugatzen ditu: estazioa gehienez 10 minuturo eskatzen da.	Els mòduls es detecten sols des del teu compte Netatmo. Netatmo limita les consultes periòdiques: l'estació es demana com a molt cada 10 minuts.
+Lucero del alba al amanecer	Morning star at dawn	Luceiro da alba ao amencer	Goizeko izarra egunsentian	Estel del matí a l'alba
+Lucero vespertino al anochecer	Evening star at dusk	Luceiro da tarde ao anoitecer	Arratsaldeko izarra ilunabarrean	Estel vespertí al vespre
+Luna	Moon	Lúa	Ilargia	Lluna
+Luna llena	Full moon	Lúa chea	Ilbetea	Lluna plena
+Luna llena en apogeo · {}	Full moon at apogee · {}	Lúa chea no apoxeo · {}	Ilbetea apogeoan · {}	Lluna plena a l'apogeu · {}
+Luna llena en perigeo · {}	Full moon at perigee · {}	Lúa chea no perixeo · {}	Ilbetea perigeoan · {}	Lluna plena al perigeu · {}
+Luna nueva	New moon	Lúa nova	Ilberria	Lluna nova
+Líridas	Lyrids	Líridas	Liridak	Lírides
+Mapa clásico	Classic map	Mapa clásico	Mapa klasikoa	Mapa clàssic
+Mareas	Tides	Mareas	Mareak	Marees
+Mareas: © Instituto Hidrográfico de la Marina	Tides: © Instituto Hidrográfico de la Marina	Mareas: © Instituto Hidrográfico de la Marina	Mareak: © Instituto Hidrográfico de la Marina	Marees: © Instituto Hidrográfico de la Marina
+Marte en oposición	Mars at opposition	Marte en oposición	Marte oposizioan	Mart en oposició
+Mediodía	Noon	Mediodía	Eguerdia	Migdia
+Mejor momento del año para verlo	Best time of the year to see it	Mellor momento do ano para velo	Urteko unerik onena ikusteko	El millor moment de l'any per veure'l
+Menguante iluminante	Waning crescent	Minguante	Ilbehera	Minvant
+Mercurio en máxima elongación	Mercury at greatest elongation	Mercurio na máxima elongación	Merkurio elongazio maximoan	Mercuri a la màxima elongació
+Mes	Month	Mes	Hilabetea	Mes
+Microluna	Micromoon	Microlúa	Mikroilargia	Microlluna
+Moderada	Moderate	Moderada	Ertaina	Moderada
+Moderado	Moderate	Moderado	Ertaina	Moderat
+Municipios: maestro de municipios de AEMET	Municipalities: AEMET's municipality register	Concellos: mestre de municipios de AEMET	Udalerriak: AEMETen udalerri-zerrenda	Municipis: mestre de municipis d'AEMET
+Muy alto	Very high	Moi alto	Oso altua	Molt alt
+Muy nuboso	Very cloudy	Moi nubrado	Oso hodeitsu	Molt ennuvolat
+Muy nuboso con lluvia	Very cloudy with rain	Moi nubrado con choiva	Oso hodeitsu eta euria	Molt ennuvolat amb pluja
+Muy nuboso con lluvia escasa	Very cloudy with light rain	Moi nubrado con choiva escasa	Oso hodeitsu eta euri gutxi	Molt ennuvolat amb pluja escassa
+Muy nuboso con nieve	Very cloudy with snow	Moi nubrado con neve	Oso hodeitsu eta elurra	Molt ennuvolat amb neu
+Muy nuboso con nieve escasa	Very cloudy with light snow	Moi nubrado con neve escasa	Oso hodeitsu eta elur gutxi	Molt ennuvolat amb neu escassa
+Muy nuboso con tormenta	Very cloudy with thunderstorms	Moi nubrado con treboada	Oso hodeitsu eta ekaitza	Molt ennuvolat amb tempesta
+Muy nuboso con tormenta y lluvia escasa	Very cloudy with thunderstorms and light rain	Moi nubrado con treboada e choiva escasa	Oso hodeitsu, ekaitza eta euri gutxi	Molt ennuvolat amb tempesta i pluja escassa
+Muy pobre	Very poor	Moi mala	Oso txarra	Molt pobra
+Máx. período	Period max	Máx. período	Aldiko max.	Màx. període
+Máxima	Maximum	Máxima	Maximoa	Màxima
+Máximo	Maximum	Máximo	Maximoa	Màxim
+Mín. / máx. última hora	Min / max last hour	Mín. / máx. última hora	Min. / max. azken orduan	Mín. / màx. darrera hora
+Mínima	Minimum	Mínima	Minimoa	Mínima
+Mínimo	Minimum	Mínimo	Minimoa	Mínim
+naranja	orange	laranxa	laranja	taronja
+Neblina	Mist	Néboa lixeira	Lanbroa	Boirina
+Netatmo	Netatmo	Netatmo	Netatmo	Netatmo
+Netatmo se consulta como mucho cada 10 minutos: es lo que tarda la estación en medir.	Netatmo is queried at most every 10 minutes: that's how long the station takes to measure.	Netatmo consúltase como moito cada 10 minutos: é o que tarda a estación en medir.	Netatmo gehienez 10 minuturo kontsultatzen da: hori behar du estazioak neurtzeko.	Netatmo es consulta com a molt cada 10 minuts: és el que triga l'estació a mesurar.
+Nevadas	Snowfall	Nevaradas	Elur-jasak	Nevades
+Neón	Neon	Neón	Neoia	Neó
+Niebla	Fog	Néboa	Behelainoa	Boira
+Nieblas	Fog	Néboas	Behelainoak	Boires
+Nieve	Snow	Neve	Elurra	Neu
+No hay estaciones meteorológicas en la cuenta de Netatmo	There are no weather stations in the Netatmo account	Non hai estacións meteorolóxicas na conta de Netatmo	Ez dago eguraldi-estaziorik Netatmo kontuan	No hi ha estacions meteorològiques al compte de Netatmo
+No hay pluviómetro configurado.	No rain gauge configured.	Non hai ningún pluviómetro configurado.	Ez dago euri-neurgailurik konfiguratuta.	No hi ha cap pluviòmetre configurat.
+No hay pluviómetro detectado. Pulsa «Detectar de nuevo» en Ajustes.	No rain gauge detected. Tap “Detect again” in Settings.	Non se detectou ningún pluviómetro. Preme «Detectar de novo» en Axustes.	Ez da euri-neurgailurik hauteman. Sakatu «Detektatu berriro» Ezarpenetan.	No s'ha detectat cap pluviòmetre. Prem «Detectar de nou» a Configuració.
+No se pudo actualizar	Couldn't update	Non se puido actualizar	Ezin izan da eguneratu	No s'ha pogut actualitzar
+No se pudo cargar la red de estaciones de AEMET (¿clave caducada?).	Couldn't load AEMET's station network (expired key?).	Non se puido cargar a rede de estacións de AEMET (clave caducada?).	Ezin izan da AEMETen estazio-sarea kargatu (gakoa iraungita?).	No s'ha pogut carregar la xarxa d'estacions d'AEMET (clau caducada?).
+No se pudo iniciar sesión	Couldn't sign in	Non se puido iniciar sesión	Ezin izan da saioa hasi	No s'ha pogut iniciar la sessió
+Nocturna	Night	Nocturna	Gauekoa	Nocturna
+Nubes altas	High clouds	Nubes altas	Goi-hodeiak	Núvols alts
+Nubosidad de evolución	Convective clouds	Nubosidade de evolución	Bilakaerako hodeiak	Nuvolositat d'evolució
+Nuboso	Cloudy	Nubrado	Hodeitsu	Ennuvolat
+Nuboso con lluvia	Cloudy with rain	Nubrado con choiva	Hodeitsu eta euria	Ennuvolat amb pluja
+Nuboso con lluvia escasa	Cloudy with light rain	Nubrado con choiva escasa	Hodeitsu eta euri gutxi	Ennuvolat amb pluja escassa
+Nuboso con nieve	Cloudy with snow	Nubrado con neve	Hodeitsu eta elurra	Ennuvolat amb neu
+Nuboso con nieve escasa	Cloudy with light snow	Nubrado con neve escasa	Hodeitsu eta elur gutxi	Ennuvolat amb neu escassa
+Nuboso con tormenta	Cloudy with thunderstorms	Nubrado con treboada	Hodeitsu eta ekaitza	Ennuvolat amb tempesta
+Nuboso con tormenta y lluvia escasa	Cloudy with thunderstorms and light rain	Nubrado con treboada e choiva escasa	Hodeitsu, ekaitza eta euri gutxi	Ennuvolat amb tempesta i pluja escassa
+Ocaso	Sunset	Ocaso	Sartzea	Posta
+Olivo	Olive	Oliveira	Olibondoa	Olivera
+Oriónidas	Orionids	Oriónidas	Orionidak	Oriònides
+Orto	Sunrise	Orto	Irteera	Sortida
+Parcial	Partial	Parcial	Partziala	Parcial
+Parcial, hemisferio sur	Partial, southern hemisphere	Parcial, hemisferio sur	Partziala, hego hemisferioa	Parcial, hemisferi sud
+Parcialmente nuboso	Partly cloudy	Parcialmente nubrado	Partzialki lainotua	Parcialment ennuvolat
+Penumbral	Penumbral	Penumbral	Penunbrala	Penombral
+Penumbral, visible Europa	Penumbral, visible from Europe	Penumbral, visible en Europa	Penunbrala, Europatik ikusgai	Penombral, visible a Europa
+Periodo	Period	Período	Aldia	Període
+Periodos de lluvia	Intermittent rain	Períodos de choiva	Euri-tarteak	Períodes de pluja
+Permitir la ubicación	Allow location	Permitir a localización	Baimendu kokapena	Permet la ubicació
+Perseidas	Perseids	Perseidas	Perseidak	Perseides
+Pico · hasta {} meteoros/h	Peak · up to {} meteors/h	Pico · ata {} meteoros/h	Gailurra · {} meteoro/h arte	Pic · fins a {} meteors/h
+pluviómetro	rain gauge	pluviómetro	euri-neurgailua	pluviòmetre
+Pobre	Poor	Mala	Txarra	Pobra
+Pocas bandas	Few bands	Poucas bandas	Banda gutxi	Poques bandes
+Poco nuboso	Mostly clear	Pouco nubrado	Hodei gutxi	Poc ennuvolat
+Polvo en suspensión	Airborne dust	Po en suspensión	Hauts esekia	Pols en suspensió
+Portugal: IPMA (previsión, observaciones y avisos)	Portugal: IPMA (forecast, observations and warnings)	Portugal: IPMA (predición, observacións e avisos)	Portugal: IPMA (iragarpena, behaketak eta abisuak)	Portugal: IPMA (previsió, observacions i avisos)
+Predicción, observaciones y avisos: © AEMET	Forecast, observations and warnings: © AEMET	Predición, observacións e avisos: © AEMET	Iragarpena, behaketak eta abisuak: © AEMET	Predicció, observacions i avisos: © AEMET
+Presión	Pressure	Presión	Presioa	Pressió
+Previsión oficial · a {} km	Official forecast · {} km away	Predición oficial · a {} km	Iragarpen ofiziala · {} km-ra	Previsió oficial · a {} km
+Prob. lluvia	Rain chance	Prob. choiva	Euri auk.	Prob. pluja
+Promedio	Average	Media	Batez bestekoa	Mitjana
+Próximas 48 horas	Next 48 hours	Vindeiras 48 horas	Hurrengo 48 orduak	Pròximes 48 hores
+Próximos 7 días	Next 7 days	Vindeiros 7 días	Hurrengo 7 egunak	Pròxims 7 dies
+Pueblos y aldeas: GeoNames (CC BY 4.0)	Towns and villages: GeoNames (CC BY 4.0)	Lugares e aldeas: GeoNames (CC BY 4.0)	Herriak eta auzoak: GeoNames (CC BY 4.0)	Pobles i llogarets: GeoNames (CC BY 4.0)
+Puerto	Port	Porto	Portua	Port
+Quitar	Remove	Quitar	Kendu	Treu
+Racha máxima	Max gust	Refacho máximo	Bolada maximoa	Ratxa màxima
+racha {}	gust {}	refacho {}	bolada {}	ratxa {}
+Razonable	Fair	Razoable	Onargarria	Raonable
+Rissagas	Rissagas	Rissagas	Rissagak	Rissagues
+rojo	red	vermello	gorria	vermell
+Ruido	Noise	Ruído	Zarata	Soroll
+Ruido dB	Noise dB	Ruído dB	Zarata dB	Soroll dB
+Sale {} · se pone {}	Rises {} · sets {}	Sae {} · ponse {}	Irteera {} · sartzea {}	Surt {} · es pon {}
+Saturno en oposición	Saturn at opposition	Saturno en oposición	Saturno oposizioan	Saturn en oposició
+Semana	Week	Semana	Astea	Setmana
+Sensación térmica	Feels like	Sensación térmica	Sentitzen den tenperatura	Sensació tèrmica
+Sesión de Netatmo iniciada	Signed in to Netatmo	Sesión de Netatmo iniciada	Netatmo saioa hasita	Sessió de Netatmo iniciada
+Si la más cercana está al otro lado de la montaña, elige la que comparta tu valle o tu altitud.	If the nearest one is on the other side of the mountain, pick one that shares your valley or altitude.	Se a máis próxima está ao outro lado da montaña, escolle a que comparta o teu val ou a túa altitude.	Hurbilena mendiaren beste aldean badago, aukeratu zure haran edo altitude bera duena.	Si la més propera és a l'altra banda de la muntanya, tria la que comparteixi la teva vall o la teva altitud.
+Sin clave de AEMET el tiempo sale de Open-Meteo, que no tiene estaciones: modela tu punto exacto. Pon la clave en Ajustes para elegir estación.	Without an AEMET key the weather comes from Open-Meteo, which has no stations: it models your exact point. Add the key in Settings to pick a station.	Sen clave de AEMET o tempo sae de Open-Meteo, que non ten estacións: modela o teu punto exacto. Pon a clave en Axustes para escoller estación.	AEMET gakorik gabe eguraldia Open-Meteotik dator, eta horrek ez du estaziorik: zure puntu zehatza modelatzen du. Jarri gakoa Ezarpenetan estazioa aukeratzeko.	Sense clau d'AEMET el temps surt d'Open-Meteo, que no té estacions: modela el teu punt exacte. Posa la clau a Ajustos per triar estació.
+Sin clave, el tiempo sale de Open-Meteo con la misma pantalla. La clave se pide gratis en opendata.aemet.es y hay que renovarla cuando AEMET lo pide.	Without a key, the weather comes from Open-Meteo on the same screen. The key is free at opendata.aemet.es and must be renewed when AEMET asks.	Sen clave, o tempo sae de Open-Meteo coa mesma pantalla. A clave pídese de balde en opendata.aemet.es e hai que renovala cando AEMET o pide.	Gakorik gabe, eguraldia Open-Meteotik dator pantaila berean. Gakoa doan eskatzen da opendata.aemet.es-en, eta AEMETek eskatzen duenean berritu behar da.	Sense clau, el temps surt d'Open-Meteo amb la mateixa pantalla. La clau es demana gratis a opendata.aemet.es i cal renovar-la quan AEMET ho demana.
+Sin clave, y aire, polen y UV: Open-Meteo (CC BY 4.0)	Without a key, and air, pollen and UV: Open-Meteo (CC BY 4.0)	Sen clave, e aire, pole e UV: Open-Meteo (CC BY 4.0)	Gakorik gabe, eta airea, polena eta UV: Open-Meteo (CC BY 4.0)	Sense clau, i aire, pol·len i UV: Open-Meteo (CC BY 4.0)
+Sin datos	No data	Sen datos	Daturik ez	Sense dades
+Sin datos de mareas	No tide data	Sen datos de mareas	Marea-daturik ez	Sense dades de marees
+Sin datos del IHM	No data from IHM	Sen datos do IHM	IHMren daturik ez	Sense dades de l'IHM
+sin módulos	no modules	sen módulos	modulurik gabe	sense mòduls
+Sol	Sun	Sol	Eguzkia	Sol
+Solsticio de invierno	Winter solstice	Solsticio de inverno	Neguko solstizioa	Solstici d'hivern
+Solsticio de verano	Summer solstice	Solsticio de verán	Udako solstizioa	Solstici d'estiu
+Sol·Luna	Sun·Moon	Sol·Lúa	Eguzkia·Ilargia	Sol·Lluna
+Sol·Luna · {}	Sun·Moon · {}	Sol·Lúa · {}	Eguzkia·Ilargia · {}	Sol·Lluna · {}
+Subiendo	Rising	Subindo	Igotzen	Pujant
+Superluna	Supermoon	Superlúa	Superilargia	Superlluna
+Temperatura	Temperature	Temperatura	Tenperatura	Temperatura
+Temperatura ext.	Outdoor temp.	Temperatura ext.	Kanpoko tenp.	Temperatura ext.
+Temperatura próximas horas	Temperature next hours	Temperatura vindeiras horas	Hurrengo orduetako tenperatura	Temperatura pròximes hores
+Temperaturas máximas	High temperatures	Temperaturas máximas	Tenperatura maximoak	Temperatures màximes
+Temperaturas mínimas	Low temperatures	Temperaturas mínimas	Tenperatura minimoak	Temperatures mínimes
+Tiempo	Weather	Tempo	Eguraldia	Temps
+Tiempo no disponible	Weather unavailable	Tempo non dispoñible	Eguraldia ez erabilgarri	Temps no disponible
+Tierra	Earth	Terra	Lurra	Terra
+Todos los puertos	All ports	Todos os portos	Portu guztiak	Tots els ports
+Tormenta	Thunderstorm	Treboada	Ekaitza	Tempesta
+Tormentas	Thunderstorms	Treboadas	Ekaitzak	Tempestes
+Total	Total	Total	Guztira	Total
+Total, visible Australia, Nueva Zelanda	Total, visible from Australia, New Zealand	Total, visible en Australia, Nova Zelandia	Osoa, Australiatik eta Zeelanda Berritik ikusgai	Total, visible a Austràlia, Nova Zelanda
+Total, visible Europa, América	Total, visible from Europe, the Americas	Total, visible en Europa, América	Osoa, Europatik eta Amerikatik ikusgai	Total, visible a Europa, Amèrica
+Total, visible Europa, África, Asia	Total, visible from Europe, Africa, Asia	Total, visible en Europa, África, Asia	Osoa, Europatik, Afrikatik eta Asiatik ikusgai	Total, visible a Europa, Àfrica, Àsia
+Total, visible N. Atlántico, Groenlandia	Total, visible from the N. Atlantic, Greenland	Total, visible no N. Atlántico, Groenlandia	Osoa, Ipar Atlantikotik eta Groenlandiatik ikusgai	Total, visible a l'Atlàntic N., Groenlàndia
+Total, visible N. África, Oriente Medio	Total, visible from N. Africa, Middle East	Total, visible no N. de África, Oriente Medio	Osoa, Ipar Afrikatik eta Ekialde Ertainetik ikusgai	Total, visible al N. d'Àfrica, Orient Mitjà
+Total, visible Namibia, Australia	Total, visible from Namibia, Australia	Total, visible en Namibia, Australia	Osoa, Namibiatik eta Australiatik ikusgai	Total, visible a Namíbia, Austràlia
+Tu punto exacto	Your exact point	O teu punto exacto	Zure puntu zehatza	El teu punt exacte
+Ubicación	Location	Localización	Kokapena	Ubicació
+Venus en máxima elongación	Venus at greatest elongation	Venus na máxima elongación	Artizarra elongazio maximoan	Venus a la màxima elongació
+Viento	Wind	Vento	Haizea	Vent
+Vientos	Wind	Ventos	Haizea	Vents
+Visible tras el ocaso	Visible after sunset	Visible tras o solpor	Ilunabarraren ondoren ikusgai	Visible després de la posta
+Volver	Back	Volver	Itzuli	Tornar
+Volver a hoy	Back to today	Volver a hoxe	Itzuli gaur egunera	Torna a avui
+Volver al {}	Back to {}	Volver ao {}	Itzuli {}(e)ra	Torna al {}
+Widget de Mareas	Tides widget	Widget de Mareas	Mareen widgeta	Widget de Marees
+Widget de Netatmo	Netatmo widget	Widget de Netatmo	Netatmo widgeta	Widget de Netatmo
+Widget de Sol·Luna	Sun·Moon widget	Widget de Sol·Lúa	Eguzkia·Ilargia widgeta	Widget de Sol·Lluna
+Widget de Tiempo	Weather widget	Widget do Tempo	Eguraldiaren widgeta	Widget del Temps
+Widgets · color según la temperatura	Widgets · colour by temperature	Widgets · cor segundo a temperatura	Widgetak · kolorea tenperaturaren arabera	Widgets · color segons la temperatura
+{} (por omisión)	{} (default)	{} (predeterminada)	{} (lehenetsia)	{} (per defecte)
+{} · máx {}	{} · max {}	{} · máx {}	{} · max {}	{} · màx {}
+{} · nivel {}	{} · level {}	{} · nivel {}	{} · maila {}	{} · nivell {}
+{} · {}	{} · {}	{} · {}	{} · {}	{} · {}
+{}% iluminada	{}% illuminated	{}% iluminada	%{} argituta	{}% il·luminada
+Índice UV máximo	Max UV index	Índice UV máximo	UV indize maximoa	Índex UV màxim
+Úrsidas	Ursids	Úrsidas	Ursidak	Úrsides
+✓ Usa la sesión de Calefacción (no hace falta nada más si allí has iniciado sesión con permiso de estaciones).	✓ Uses Calefacción's session (nothing else needed if you signed in there with station access).	✓ Usa a sesión de Calefacción (non fai falta nada máis se alí iniciaches sesión con permiso de estacións).	✓ Calefacción-en saioa erabiltzen du (ez da beste ezer behar han estazio-baimenarekin saioa hasi baduzu).	✓ Fa servir la sessió de Calefacción (no cal res més si hi has iniciat sessió amb permís d'estacions).
+🌊 Pleamar	🌊 High tide	🌊 Preamar	🌊 Itsasgora	🌊 Plenamar
+🌊 Pleamar {}	🌊 High tide {}	🌊 Preamar {}	🌊 Itsasgora {}	🌊 Plenamar {}
+🏖️ Bajamar	🏖️ Low tide	🏖️ Baixamar	🏖️ Itsasbehera	🏖️ Baixamar
+🏖️ Bajamar {}	🏖️ Low tide {}	🏖️ Baixamar {}	🏖️ Itsasbehera {}	🏖️ Baixamar {}

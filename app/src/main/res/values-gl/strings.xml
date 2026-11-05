@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_weather_label">Tempo</string>
+    <string name="widget_sunmoon_label">Sol e Lúa</string>
+    <string name="widget_tides_label">Mareas</string>
+    <string name="widget_desc">Temperatura, ceo, máxima e mínima e as vindeiras horas</string>
+    <string name="widget_netatmo_desc">A túa estación Netatmo: temperatura e humidade exterior e interior, presión, CO₂, ruído e choiva</string>
+    <string name="widget_sunmoon_desc">Orto e ocaso do sol, fase lunar e próxima lúa</string>
+    <string name="widget_tides_desc">A marea de agora no porto que escollas e a seguinte preamar ou baixamar</string>
+</resources>

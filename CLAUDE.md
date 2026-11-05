@@ -7,7 +7,7 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.2: compila y pasan 22 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.2.apk`.
+**0.3: compila y pasan 30 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.apk`.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
@@ -19,29 +19,50 @@ Hecho, traducido de la app de iOS:
   adaptado a las mismas estructuras, como en iOS sin clave.
 - **Avisos CAP**: el `.tar` de la comunidad, punto en polígono, el nivel más alto por fenómeno,
   sin los ya caducados.
-- **Ubicación sin geocodificador** (no hay sin Google Play): `LocationManager`, el municipio de
-  AEMET más cercano (`assets/Municipios.tsv`, sacado del maestro de AEMET el 5-nov-2026) y el
-  núcleo del nomenclátor (`assets/Nucleos.tsv`, el de iOS). **Buscador instantáneo** sin red.
+- **Ubicación sin geocodificador** (no hay sin Google Play): `LocationManager`, el municipio por
+  **término municipal** (punto en polígono sobre `assets/Recintos.bin`, IGN vía es-atlas 0.6.0,
+  `Tools/build_recintos.py`; el punto más cercano sólo si no cae en ninguno), el núcleo del
+  nomenclátor (`assets/Nucleos.tsv`) y los distritos de Madrid (`assets/Distritos.tsv`).
+  **Buscador instantáneo** sin red, con las 35 localidades del IPMA.
+- **Portugal con el IPMA** (0.3, `core/Ipma.kt`): previsión (`aggregate`), observación de la
+  estación más cercana y avisos, adaptados a las estructuras de AEMET. Un sitio es portugués por
+  su código `pt-<globalId>`. Fuente: el IPMA si su localidad está a ≤ 25 km, si no Open-Meteo; se
+  cambia tocando la tarjeta del sitio (selector de fuente, como en iOS). Los avisos, siempre del
+  IPMA. Para el GPS: si no cae en un término de España y sí en el contorno de Portugal
+  (`assets/Portugal.txt`, Natural Earth 10m, `Tools/build_portugal.py`), en Madeira o Azores, o a
+  12 km de una localidad del IPMA (la costa de Natural Earth es gruesa).
+- **Netatmo** (0.3): **la estación meteorológica** (base interior, módulo exterior `NAModule1` y
+  pluviómetro `NAModule3`), no el termostato. Pestaña **Actual** (sólo si está configurado) con
+  exterior e interior, pilas de los módulos y avisos del pluviómetro; **gráficas** al tocar cada
+  tarjeta (semana, mes, 3 meses, año; la lluvia con `sum_rain` en tiempo real y el pluviómetro
+  re-detectado si cambió); **widget** en tres tamaños con anillos (mapas de bits) y fondo verde o
+  según la temperatura; refresco cada hora si hay widget. **Sesión compartida con Calefacción**:
+  su proveedor `es.altamirano.calefaccion.netatmo` da un `access_token` válido sólo a Tiempo
+  firmada con su clave, y Tiempo comprueba la firma de Calefacción (`SharedSession`). Si no, sesión
+  propia: credenciales en Ajustes y refresh token pegado (como iOS) o inicio de sesión en el
+  navegador con `tiempo-netatmo://oauth-callback` (hay que darla de alta en dev.netatmo.com).
+  Cifrada con una clave del Keystore. **La estación se pide como mucho cada 10 min** (caché en
+  disco común a la app y al widget), por los límites de Netatmo desde marzo de 2027.
 - **Sol·Luna**: traducción línea a línea de `SunMoonService` (NOAA); fase, iluminación, próximas
-  fases. **Mareas del IHM** con la conversión UTC → hora del puerto y reagrupado por día local;
-  el puerto más cercano (sin Lisboa) y los dos siguientes.
-- **Widget de Tiempo** (pequeño y mediano) con ciudad y fondo por widget, y el **color según la
-  temperatura con las seis escalas de iOS copiadas exactas** (`core/TempScale.kt`, con su
-  degradado en OKLab y la tinta azul marino `#0B2236`); avisos a los widgets agrupados (3 s);
-  refresco cada 3 h con WorkManager.
-- **Municipio por término municipal** (0.2): punto en polígono sobre `assets/Recintos.bin` (IGN,
-  vía es-atlas 0.6.0; se genera con `Tools/build_recintos.py`); el punto más cercano sólo si no
-  cae en ninguno. Con sólo el punto, en San Blas salía Coslada (el de Madrid está en Sol).
-  `assets/Distritos.tsv`: los distritos de Madrid, que el nomenclátor no trae.
-- **Selector de estación** (tocar la tarjeta del sitio): Automática o una de las 15 más cercanas.
-- **Mareas siempre**, con el puerto elegido guardado (Llanes por omisión, como en iOS), y
-  **calendario lunar con eventos astronómicos** (`core/Astro.kt`: Meeus 49 y 27, tablas de iOS).
+  fases, **selector de fecha** (0.3), calendario lunar con eventos astronómicos (`core/Astro.kt`).
+  **Mareas del IHM** con la conversión UTC → hora del puerto; el puerto elegido guardado (Llanes
+  por omisión).
+- **Cuatro widgets** (Tiempo, Netatmo, Sol·Luna, Mareas), cada uno con su configuración (ciudad,
+  fondo o puerto) y abriendo su pestaña (`tiempo://aemet|netatmo|cosmos|tides`). Fondo según la
+  temperatura con **las seis escalas de iOS copiadas exactas** (`core/TempScale.kt`), ahora con el
+  degradado de verdad (mapa de bits estirado). Mareas: la playa con el agua a la altura de la marea.
+  Avisos a los widgets agrupados (3 s); tiempo cada 3 h y Netatmo/Sol·Luna/Mareas cada hora.
+- **Idiomas** (0.3): es, en, gl, eu, ca. Como en iOS, **la clave es el texto en español**:
+  `Tools/traducciones.tsv` (las de iOS copiadas y el resto nuevas) → `python3 Tools/i18n.py` →
+  `assets/i18n/<idioma>.tsv`. Se traduce al pintar: los `Text` de `ui` y `widget` son nuestros
+  (`ui/Theme.kt`, `widget/GlanceText.kt`) y pasan por `core/I18n.kt`, con huecos `{}` (o `{1}`,
+  `{2}` para cambiar el orden) y traduciendo también lo que cae en el hueco. Así salen traducidos
+  hasta los cielos que manda AEMET. **Texto nuevo en pantalla: añadirlo a `traducciones.tsv`.**
+  El idioma se puede elegir para la app en Ajustes de Android (`locales_config.xml`).
 - Arreglado respecto a iOS: la probabilidad de lluvia de la franja «2002» (20 a 02 h, cruza la
   medianoche) no salía nunca; aquí sí.
 
-Falta: **Netatmo** (pestaña Actual, gráficas y su widget), **Portugal con el IPMA**, widgets
-Sol·Luna y Mareas, selector de fecha en Sol·Luna, traducciones (en, gl, eu, ca: ahora sólo
-español) y probar en el móvil.
+Falta: probar en el móvil (todo, y la sesión compartida con Calefacción con una cuenta de verdad).
 
 **La clave de AEMET de Bruno caducó** (había que renovarla antes del 15-oct-2026): AEMET contesta
 401 a todo. Mientras no la renueve en opendata.aemet.es, la app tira de Open-Meteo. Va en
@@ -85,9 +106,11 @@ las tablas de las escalas de color (`AppPersonalWidget/WidgetTheme.swift`).
 ## Netatmo va a limitar las consultas (correo del 5-nov-2026)
 
 Desde el 1-mar-2027, límites más bajos para quien consulta periódicamente; Netatmo empuja a los
-webhooks, que necesitan un servidor con HTTPS público (el móvil no puede recibirlos). Cuando se
-haga la pestaña Actual: pedir la estación como mucho cada 10 min (es lo que tarda en medir) y
-compartir la sesión con CalefaccionDroid. Ver el `CLAUDE.md` de CalefaccionDroid.
+webhooks, que necesitan un servidor con HTTPS público (el móvil no puede recibirlos). Hecho: la
+estación se pide como mucho cada 10 min (es lo que tarda en medir), las gráficas se guardan
+10 min (semana) o 1 h, el widget refresca cada hora y la sesión se comparte con CalefaccionDroid.
+Si aun así no basta, la salida es un servidor en casa con los webhooks. Ver el `CLAUDE.md` de
+CalefaccionDroid.
 
 ## Trampas que vienen del original
 
