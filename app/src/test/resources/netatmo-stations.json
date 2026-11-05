@@ -1,0 +1,9 @@
+{"body":{"devices":[{"_id":"70:ee:50:00:00:01","station_name":"Casa (Interior)","home_name":"Casa","type":"NAMain","reachable":true,"last_status_store":1762359600,
+"place":{"altitude":1192,"city":"Real Sitio de San Ildefonso","country":"ES","timezone":"Europe/Madrid","location":[-4.0047,40.9017]},
+"dashboard_data":{"time_utc":1762359590,"Temperature":20.4,"CO2":712,"Humidity":48,"Noise":38,"Pressure":1018.6,"AbsolutePressure":881.2,"min_temp":19.1,"max_temp":21.0,"pressure_trend":"stable"},
+"modules":[
+{"_id":"02:00:00:00:00:02","type":"NAModule1","module_name":"Exterior","reachable":true,"battery_percent":64,
+ "dashboard_data":{"time_utc":1762359580,"Temperature":7.3,"Humidity":81,"min_temp":2.1,"max_temp":13.4,"temp_trend":"down"}},
+{"_id":"05:00:00:00:00:03","type":"NAModule3","module_name":"Pluviómetro","reachable":true,"battery_percent":22,
+ "dashboard_data":{"time_utc":1762359580,"Rain":0,"sum_rain_1":0.2,"sum_rain_24":4.6}}]}],
+"user":{"mail":"x","administrative":{"lang":"es"}}},"status":"ok","time_exec":0.05,"time_server":1762359650}

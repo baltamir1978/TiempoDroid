@@ -22,9 +22,13 @@ android {
         applicationId = "es.altamirano.tiempo"
         minSdk = 31          // Android 12
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2"
+        versionCode = 3
+        versionName = "0.3"
         buildConfigField("String", "AEMET_API_KEY", localString("aemet.apiKey"))
+        // Netatmo (como `Secrets.swift` en iOS): sólo hace falta si no se usa la sesión de Calefacción.
+        buildConfigField("String", "NETATMO_CLIENT_ID", localString("netatmo.clientId"))
+        buildConfigField("String", "NETATMO_CLIENT_SECRET", localString("netatmo.clientSecret"))
+        buildConfigField("String", "NETATMO_REFRESH_TOKEN", localString("netatmo.refreshToken"))
     }
 
     // La clave de release vive fuera del repositorio; sin ella la release sale sin firmar.
@@ -74,5 +78,6 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
     implementation(libs.work.runtime)
+    implementation(libs.browser)
     testImplementation(libs.junit)
 }

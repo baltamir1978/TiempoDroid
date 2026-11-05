@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -121,7 +122,7 @@ class WidgetSnapshots(private val context: Context) {
      */
     fun requestUpdate() {
         nudge?.cancel()
-        nudge = context.app.scope.launch { delay(3000); runCatching { WeatherWidget().updateAll(context) } }
+        nudge = context.app.scope.launch { delay(3000); updateAllWidgets(context) }
     }
 }
 
@@ -142,15 +143,13 @@ class WeatherWidget : GlanceAppWidget() {
     private fun Content(s: Snapshot?, tempBg: Boolean, scale: es.altamirano.tiempo.core.TempScale) {
         val wide = LocalSize.current.width >= 250.dp
         val temp = s?.temp?.toDouble()
-        val (top, _) = if (tempBg && temp != null) TempPalette.gradient(temp, scale) else (0x1F9D7B to 0x0B6F53)
+        val (top, bottom) = if (tempBg && temp != null) TempPalette.gradient(temp, scale) else (0x37D094 to 0x0B6F53)
         val dark = tempBg && temp != null && TempPalette.prefersDarkInk(temp, scale)
         val ink = ColorProvider(if (dark) Color(0xFF0B2236) else Color.White)
         val soft = ColorProvider(if (dark) Color(0xCC0B2236) else Color(0xCCFFFFFF))
-        Box(GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(20.dp)
-            .background(ColorProvider(Color(0xFF000000.toInt() or top)))
-            .clickable(actionStartActivity<es.altamirano.tiempo.ui.MainActivity>()).padding(12.dp)) {
-            if (s == null) { Text("Abre la app para cargar el tiempo", style = TextStyle(color = ink, fontSize = 12.sp)); return@Box }
-            Row(GlanceModifier.fillMaxSize()) {
+        WidgetFrame(top, bottom, "aemet") {
+            if (s == null) { Text("Abre la app para cargar el tiempo", GlanceModifier.padding(12.dp), style = TextStyle(color = ink, fontSize = 12.sp)); return@WidgetFrame }
+            Row(GlanceModifier.fillMaxSize().padding(12.dp)) {
                 Column(GlanceModifier.defaultWeight()) {
                     Text(s.name, maxLines = 1, style = TextStyle(color = ink, fontWeight = FontWeight.Bold, fontSize = 13.sp))
                     Text("${s.temp ?: "—"}°", style = TextStyle(color = ink, fontSize = 38.sp))
@@ -174,33 +173,77 @@ class WeatherWidget : GlanceAppWidget() {
 
 class WeatherWidgetReceiver : GlanceAppWidgetReceiver() { override val glanceAppWidget: GlanceAppWidget = WeatherWidget() }
 
-/** Ciudad y fondo de cada widget, al ponerlo (o al editarlo). */
+/** Avisa a los cuatro widgets (agrupado por `WidgetSnapshots.requestUpdate`). */
+suspend fun updateAllWidgets(context: Context) {
+    runCatching { WeatherWidget().updateAll(context) }
+    runCatching { NetatmoWidget().updateAll(context) }
+    runCatching { SunMoonWidget().updateAll(context) }
+    runCatching { TidesWidget().updateAll(context) }
+}
+
+/**
+ * Lo que se elige de cada widget al ponerlo (o al editarlo), como «Editar widget» en iOS:
+ * Tiempo, ciudad y fondo; Sol·Luna, ciudad; Mareas, puerto; Netatmo, fondo.
+ */
 class WidgetConfigActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val id = intent?.extras?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
         setResult(Activity.RESULT_CANCELED, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
+        val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider?.className ?: ""
+        val kind = when {
+            provider.endsWith("NetatmoWidgetReceiver") -> "netatmo"
+            provider.endsWith("SunMoonWidgetReceiver") -> "sunmoon"
+            provider.endsWith("TidesWidgetReceiver") -> "tides"
+            else -> "weather"
+        }
         val locs = app.locations.all()
+        fun done() {
+            app.scope.launch { updateAllWidgets(applicationContext) }
+            setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+            finish()
+        }
         setContent {
             TiempoTheme {
-                var tempBg by remember { mutableStateOf(app.settings.widgetTempBackground(id)) }
+                var tempBg by remember { mutableStateOf(app.settings.widgetTempBackground(id, default = kind == "weather")) }
                 Surface(Modifier.fillMaxSize()) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Widget de Tiempo", style = MaterialTheme.typography.titleLarge)
-                        Row(Modifier.padding(vertical = 12.dp)) {
-                            Text("Color según la temperatura", Modifier.weight(1f).padding(top = 12.dp))
-                            Switch(tempBg, { tempBg = it })
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.padding(16.dp)) {
+                        item {
+                            Text(when (kind) { "netatmo" -> "Widget de Netatmo"; "sunmoon" -> "Widget de Sol·Luna"; "tides" -> "Widget de Mareas"; else -> "Widget de Tiempo" },
+                                style = MaterialTheme.typography.titleLarge)
                         }
-                        Text("Ciudad", style = MaterialTheme.typography.titleSmall, color = Green)
-                        locs.forEach { l ->
-                            ListItem(headlineContent = { Text(if (l.isCurrent) "📍 ${l.name}" else l.name) },
-                                modifier = Modifier.clickable {
-                                    app.settings.setWidget(id, LocationStore.keyOf(l), tempBg)
-                                    app.scope.launch { runCatching { app.weather.load(l) }.getOrNull()?.let { app.snapshots.save(l, it) }; WeatherWidget().updateAll(applicationContext) }
-                                    setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
-                                    finish()
-                                })
+                        if (kind == "weather" || kind == "netatmo") item {
+                            Row(Modifier.padding(vertical = 12.dp)) {
+                                Text("Color según la temperatura", Modifier.weight(1f).padding(top = 12.dp))
+                                Switch(tempBg, { tempBg = it })
+                            }
+                        }
+                        when (kind) {
+                            "netatmo" -> item {
+                                androidx.compose.material3.Button(onClick = { app.settings.setWidget(id, null, tempBg); done() }) { Text("Listo") }
+                            }
+                            "tides" -> {
+                                val here = locs.firstOrNull()
+                                val near = here?.let { es.altamirano.tiempo.core.portsByDistance(it.lat, it.lon).take(4).map { it.first } } ?: emptyList()
+                                item { Text("Puerto", style = MaterialTheme.typography.titleSmall, color = Green) }
+                                items(near + es.altamirano.tiempo.core.IHM_STATIONS.filter { it !in near }) { p ->
+                                    ListItem(headlineContent = { Text(p.name) },
+                                        supportingContent = if (p in near && here != null) { { Text("a ${es.altamirano.tiempo.ui.km(es.altamirano.tiempo.core.Places.distanceKm(here.lat, here.lon, p.lat, p.lon))} km de ${here.name}") } } else null,
+                                        modifier = Modifier.clickable { app.settings.setWidgetPort(id, p.id); done() })
+                                }
+                            }
+                            else -> {
+                                item { Text("Ciudad", style = MaterialTheme.typography.titleSmall, color = Green) }
+                                items(locs) { l ->
+                                    ListItem(headlineContent = { Text(if (l.isCurrent) "📍 ${l.name}" else l.name) },
+                                        modifier = Modifier.clickable {
+                                            app.settings.setWidget(id, LocationStore.keyOf(l), tempBg)
+                                            if (kind == "weather") app.scope.launch { runCatching { app.weather.load(l) }.getOrNull()?.let { app.snapshots.save(l, it) } }
+                                            done()
+                                        })
+                                }
+                            }
                         }
                     }
                 }
@@ -209,26 +252,45 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 }
 
-/** Refresco en segundo plano de las ubicaciones con widget (cada 3 h, como el «Frecuente» de iOS es 1 h). */
+/** Refresco en segundo plano de las ubicaciones con widget y de la estación Netatmo (cada 3 h). */
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val app = applicationContext.app
-        val ids = runCatching { GlanceAppWidgetManager(applicationContext).getGlanceIds(WeatherWidget::class.java) }.getOrDefault(emptyList())
-        if (ids.isEmpty()) return Result.success()
-        val keys = ids.mapNotNull { app.settings.widgetCity(GlanceAppWidgetManager(applicationContext).getAppWidgetId(it)) }.toSet()
+        val gm = GlanceAppWidgetManager(applicationContext)
+        val ids = runCatching { gm.getGlanceIds(WeatherWidget::class.java) }.getOrDefault(emptyList())
+        val keys = ids.mapNotNull { app.settings.widgetCity(gm.getAppWidgetId(it)) }.toSet()
         for (key in keys) {
             var loc = app.locations.byKey(key) ?: continue
             if (loc.isCurrent) loc = app.locations.locate() ?: loc
             runCatching { app.snapshots.save(loc, app.weather.load(loc)) }
         }
+        updateAllWidgets(applicationContext)
         return Result.success()
     }
 
     companion object {
         fun schedule(context: Context) {
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork("widgets", ExistingPeriodicWorkPolicy.KEEP,
+            val wm = WorkManager.getInstance(context)
+            wm.enqueueUniquePeriodicWork("widgets", ExistingPeriodicWorkPolicy.KEEP,
                 PeriodicWorkRequestBuilder<RefreshWorker>(3, TimeUnit.HOURS)
                     .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
+            wm.enqueueUniquePeriodicWork("cada-hora", ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequestBuilder<HourlyWorker>(1, TimeUnit.HOURS).build())
         }
+    }
+}
+
+/**
+ * Cada hora: la estación Netatmo si hay su widget (la caché de 10 min frena lo demás; Netatmo
+ * limita las consultas periódicas desde marzo de 2027), y Sol·Luna y Mareas, que se calculan
+ * sin red o salen de la caché del IHM y sólo necesitan mover la hora.
+ */
+class HourlyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val app = applicationContext.app
+        val netatmoWidgets = runCatching { GlanceAppWidgetManager(applicationContext).getGlanceIds(NetatmoWidget::class.java) }.getOrDefault(emptyList())
+        if (netatmoWidgets.isNotEmpty() && app.netatmo.api.configured) runCatching { app.netatmo.load() }
+        updateAllWidgets(applicationContext)
+        return Result.success()
     }
 }

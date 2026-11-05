@@ -38,6 +38,9 @@ class Places(municipiosTsv: InputStream, nucleosTsv: InputStream, recintos: Inpu
 
     fun municipio(code: String) = byCode[code]
 
+    /** ¿Cae en un término municipal de España? (Para no mandar al IPMA un punto de la raya.) */
+    fun inSpain(lat: Double, lon: Double) = terms?.containing(lat, lon) != null
+
     private val terms: Recintos? = recintos?.let { Recintos(it) }
 
     /**
@@ -79,7 +82,9 @@ class Places(municipiosTsv: InputStream, nucleosTsv: InputStream, recintos: Inpu
         val n = nucleos.filter { it.ine.isNotEmpty() && byCode[it.ine] != null }
             .filter { nu -> normalize(nu.name) != normalize(byCode[nu.ine]!!.name) }
             .map { nu -> normalize(nu.name) to Suggestion(nu.ine, nu.name, byCode[nu.ine]!!.name, nu.lat, nu.lon, 1) }
-        m + n
+        // Las 35 localidades del IPMA: buscar «Faro» es lo mismo que buscar «Segovia».
+        val pt = Ipma.LOCATIONS.map { normalize(it.name) to Suggestion(it.code, it.name, "Portugal", it.lat, it.lon, 0) }
+        m + n + pt
     }
 
     private val population: Map<String, Int> by lazy { nucleos.associate { normalize(it.name) + "|" + it.ine to it.population } }
@@ -208,3 +213,36 @@ fun portsByDistance(lat: Double, lon: Double): List<Pair<TideStation, Double>> =
     IHM_STATIONS.filter { it.id != "31" }.map { it to Places.distanceKm(lat, lon, it.lat, it.lon) }.sortedBy { it.second }
 
 data class Tide(val at: java.time.Instant, val height: Double, val high: Boolean)
+
+/**
+ * La curva de la marea entre pleamares y bajamares con tramos en coseno, que tienen pendiente
+ * cero en cada extremo, la forma natural de la marea (`TideCurve` del widget de iOS). Los
+ * extremos se rellenan con uno virtual a cada lado para poder interpolar en los bordes.
+ */
+class TideCurve(tides: List<Tide>) {
+    private val e: List<Tide> = tides.sortedBy { it.at }.let { t ->
+        if (t.size < 2) t else {
+            val a0 = t[0]; val a1 = t[1]; val bn = t[t.size - 1]; val bp = t[t.size - 2]
+            listOf(Tide(a0.at.minusSeconds(a1.at.epochSecond - a0.at.epochSecond), a1.height, a1.high)) + t +
+                Tide(bn.at.plusSeconds(bn.at.epochSecond - bp.at.epochSecond), bp.height, bp.high)
+        }
+    }
+    private val real = tides.sortedBy { it.at }
+
+    fun height(at: java.time.Instant): Double {
+        if (e.isEmpty()) return 0.0
+        if (!at.isAfter(e.first().at)) return e.first().height
+        if (!at.isBefore(e.last().at)) return e.last().height
+        for (i in 0 until e.size - 1) {
+            val a = e[i]; val b = e[i + 1]
+            if (!at.isBefore(a.at) && !at.isAfter(b.at)) {
+                val frac = (at.epochSecond - a.at.epochSecond).toDouble() / (b.at.epochSecond - a.at.epochSecond)
+                return a.height + (b.height - a.height) * (1 - kotlin.math.cos(PI * frac)) / 2
+            }
+        }
+        return e.last().height
+    }
+
+    /** La siguiente pleamar o bajamar de verdad: dice si sube o baja. */
+    fun next(after: java.time.Instant): Tide? = real.firstOrNull { it.at.isAfter(after) }
+}

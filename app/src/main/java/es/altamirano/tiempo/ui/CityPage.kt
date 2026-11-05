@@ -96,12 +96,12 @@ fun CityPage(loc: SavedLocation, w: CityWeather) {
             }
         } else {
             item { NowCard(w, hours, now) }
-            if (loc.stationName != null || loc.isCurrent) item { PlaceCard(loc) }
+            if (loc.stationName != null || loc.isCurrent || loc.isPortuguese) item { PlaceCard(loc) }
             if (hours.isNotEmpty()) item { HourlyCard(hours) }
             if (hours.size > 2) item { TempChart(hours.take(25)) }
             item { DailyCard(w, now.toLocalDate()) }
             w.daily.upcomingDays(now.toLocalDate()).firstOrNull()?.let { item { TodayDetails(it) } }
-            if (!w.obs.isNullOrEmpty() && w.source == "AEMET") item { ObservationCard(w, loc) }
+            if (!w.obs.isNullOrEmpty() && (w.source == "AEMET" || w.source?.startsWith("IPMA") == true)) item { ObservationCard(w, loc) }
             w.air?.let { item { AirCard(it) } }
             item { SourceFooter(w) }
         }
@@ -195,7 +195,9 @@ private fun PlaceCard(loc: SavedLocation) {
             Row(Modifier.padding(16.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text((if (loc.isCurrent) "📍 " else "") + loc.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                    val sub = listOfNotNull(loc.province?.takeIf { it != loc.name }, loc.stationName?.let { s ->
+                    val app = LocalContext.current.app
+                    val sub = if (loc.isPortuguese) listOfNotNull(loc.province?.takeIf { it != loc.name }, app.weather.portugalLabel(loc)).joinToString(" · ")
+                        else listOfNotNull(loc.province?.takeIf { it != loc.name }, loc.stationName?.let { s ->
                         "Estación $s" + (loc.stationKm?.let { " · a ${km(it)} km" } ?: "") }).joinToString(" · ")
                     if (sub.isNotEmpty()) Text(sub, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -203,7 +205,7 @@ private fun PlaceCard(loc: SavedLocation) {
             }
         }
     }
-    if (picking) StationPicker(loc) { picking = false }
+    if (picking) { if (loc.isPortuguese) SourcePicker(loc) { picking = false } else StationPicker(loc) { picking = false } }
 }
 
 fun km(v: Double): String = if (v < 10) String.format(Locale.getDefault(), "%.1f", v) else v.roundToInt().toString()
@@ -243,6 +245,34 @@ private fun StationPicker(loc: SavedLocation, onDismiss: () -> Unit) {
                             loc.stationPinned && loc.idema == st.idema) { pick(st, d) }
                     }
                 }
+            }
+        })
+}
+
+/**
+ * En Portugal no se elige estación sino servicio (`portugueseSourceList`): el IPMA es el
+ * oficial, pero sólo prevé 35 localidades; desde lejos, Open-Meteo modela tu punto exacto.
+ */
+@Composable
+private fun SourcePicker(loc: SavedLocation, onDismiss: () -> Unit) {
+    val app = LocalContext.current.app
+    val scope = rememberCoroutineScope()
+    val point = es.altamirano.tiempo.core.Ipma.forecastPoint(loc.municipio, loc.lat, loc.lon)
+    val active = app.weather.portugalSource(loc)
+    fun pick(s: es.altamirano.tiempo.core.PortugalSource) {
+        app.settings.setPortugalSource(loc.municipio, s)
+        scope.launch { app.snapshots.save(loc, app.weather.load(loc, force = true)) }
+        onDismiss()
+    }
+    AlertDialog(onDismissRequest = onDismiss, confirmButton = { TextButton(onClick = onDismiss) { Text("Listo") } },
+        title = { Text("Fuente") },
+        text = {
+            Column {
+                point?.let { (p, d) -> StationRow("IPMA · ${p.name}", "Previsión oficial · a ${km(d)} km", active == es.altamirano.tiempo.core.PortugalSource.IPMA) { pick(es.altamirano.tiempo.core.PortugalSource.IPMA) } }
+                StationRow("Open-Meteo", "Tu punto exacto", active == es.altamirano.tiempo.core.PortugalSource.OPEN_METEO) { pick(es.altamirano.tiempo.core.PortugalSource.OPEN_METEO) }
+                Text(if (point != null && point.second > es.altamirano.tiempo.core.Ipma.NEARBY_KM)
+                    "El IPMA solo publica previsión para 35 localidades. Es la fuente oficial, pero desde ${km(point.second)} km su previsión ya describe otro sitio: Open-Meteo modela tu punto exacto. Los avisos son siempre del IPMA."
+                    else "Los avisos meteorológicos son siempre del IPMA.", Modifier.padding(top = 8.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         })
 }
@@ -450,7 +480,8 @@ private fun SourceFooter(w: CityWeather) {
             val t = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Spanish))
             Text("Actualizado $t", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text("Fuente: " + when (w.source) { "AEMET" -> "© AEMET"; null -> "—"; else -> "Open-Meteo (CC BY 4.0)" },
+        Text("Fuente: " + when {
+            w.source == "AEMET" -> "© AEMET"; w.source == null -> "—"; w.source.startsWith("IPMA") -> "© ${w.source}"; else -> "Open-Meteo (CC BY 4.0)" },
             fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         w.error?.let { Text(it, fontSize = 11.sp, color = Color(0xFFFF9500)) }
         Spacer(Modifier.height(8.dp))

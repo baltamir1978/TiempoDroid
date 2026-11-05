@@ -14,6 +14,10 @@ import es.altamirano.tiempo.core.DailyRoot
 import es.altamirano.tiempo.core.HourlyRoot
 import es.altamirano.tiempo.core.ObsRecord
 import es.altamirano.tiempo.core.Places
+import es.altamirano.tiempo.core.Ipma
+import es.altamirano.tiempo.core.PortugalSource
+import es.altamirano.tiempo.core.PortugalShape
+import es.altamirano.tiempo.net.IpmaService
 import es.altamirano.tiempo.core.TempScale
 import es.altamirano.tiempo.core.timeZoneFor
 import es.altamirano.tiempo.net.Aemet
@@ -56,7 +60,9 @@ data class SavedLocation(
 ) {
     /** El código con el que pedir la previsión. */
     val municipio: String get() = if (isCurrent) ine ?: "" else code
-    val zone: ZoneId get() = timeZoneFor(municipio, lat, lon)
+    val zone: ZoneId get() = Ipma.location(municipio)?.zone ?: timeZoneFor(municipio, lat, lon)
+    /** Portugal: lo sirve el IPMA (o Open-Meteo), no AEMET. */
+    val isPortuguese get() = Ipma.isPortuguese(municipio)
     val isCurrent get() = code == CURRENT
 
     companion object {
@@ -80,6 +86,10 @@ class Settings(context: Context) {
     fun setAemetKey(k: String) { _key.value = k.trim(); prefs.edit().putString("aemet", k.trim()).apply() }
     fun setScale(s: TempScale) { _scale.value = s; prefs.edit().putString("escala", s.name).apply() }
 
+    /** La fuente elegida a mano para un sitio de Portugal (`IPMA.pinnedSource`), por código. */
+    fun portugalSource(code: String): PortugalSource? = prefs.getString("fuente-$code", null)?.let { runCatching { PortugalSource.valueOf(it) }.getOrNull() }
+    fun setPortugalSource(code: String, s: PortugalSource?) = prefs.edit().putString("fuente-$code", s?.name).apply()
+
     /** El puerto de las mareas (en iOS, `tide_station_id`; por omisión Llanes). */
     private val _port = MutableStateFlow(prefs.getString("puerto", "4")!!)
     val tidePort: StateFlow<String> = _port.asStateFlow()
@@ -87,9 +97,12 @@ class Settings(context: Context) {
 
     /** Ciudad y fondo de cada widget («Editar widget» en iOS). */
     fun widgetCity(id: Int): String? = prefs.getString("widget-$id", null)
-    fun widgetTempBackground(id: Int): Boolean = prefs.getBoolean("widget-$id-temp", true)
-    fun setWidget(id: Int, code: String, tempBackground: Boolean) =
+    fun widgetTempBackground(id: Int, default: Boolean = true): Boolean = prefs.getBoolean("widget-$id-temp", default)
+    fun setWidget(id: Int, code: String?, tempBackground: Boolean) =
         prefs.edit().putString("widget-$id", code).putBoolean("widget-$id-temp", tempBackground).apply()
+    /** El puerto del widget de mareas («Editar widget → Estación» en iOS). */
+    fun widgetPort(id: Int): String? = prefs.getString("widget-$id-puerto", null)
+    fun setWidgetPort(id: Int, port: String) = prefs.edit().putString("widget-$id-puerto", port).apply()
 
 }
 
@@ -99,6 +112,8 @@ class Settings(context: Context) {
  * el municipio: en todo el concejo de Llanes, Apple decía «Llanes»).
  */
 class LocationStore(private val context: Context, private val places: () -> Places) {
+    private val portugalShape by lazy { context.assets.open("Portugal.txt").use { PortugalShape(it) } }
+    private fun portugal() = portugalShape
     private val file = File(context.filesDir, "ubicaciones.json")
     private val prefs = context.getSharedPreferences("ubicaciones", Context.MODE_PRIVATE)
 
@@ -154,6 +169,14 @@ class LocationStore(private val context: Context, private val places: () -> Plac
     /** Municipio y núcleo más cercanos al punto. */
     fun resolve(lat: Double, lon: Double): SavedLocation? {
         val p = places()
+        // En Portugal no hay municipio de AEMET: antes se iba al de este lado de la frontera
+        // (en Elvas salía Badajoz). Se mira primero si cae en un término de España, que la
+        // frontera de Natural Earth es más gruesa.
+        if (!p.inSpain(lat, lon) && portugal().portugal(lat, lon)) {
+            val (pt, km) = Ipma.nearest(lat, lon) ?: return null
+            val name = if (km <= 5) pt.name else "Cerca de ${pt.name}"
+            return SavedLocation(SavedLocation.CURRENT, name, "Portugal", lat, lon, ine = pt.code)
+        }
         val m = p.nearestMunicipio(lat, lon) ?: return null
         val name = p.nearestNucleo(lat, lon, m.code)?.name ?: m.name
         // La estación elegida a mano se conserva mientras sigas en el mismo municipio; la
@@ -187,13 +210,21 @@ data class CityWeather(
  * nunca se ve el tiempo de la anterior bajo el nombre de la nueva. Con AEMET, si falla, Open-Meteo.
  */
 class WeatherRepo(
-    context: Context, private val scope: CoroutineScope, settings: Settings,
+    context: Context, private val scope: CoroutineScope, private val settings: Settings,
     private val stations: suspend () -> List<ObsRecord>,
     /** Para guardar en la ubicación la estación automática, con su nombre y distancia. */
     private val onStation: (SavedLocation) -> Unit = {},
 ) {
     val cache = DiskCache(File(context.cacheDir, "aemet"))
     val aemet = Aemet(cache) { settings.aemetKey.value }
+    val ipma = IpmaService(cache)
+
+    fun portugalSource(loc: SavedLocation) = Ipma.source(loc.municipio, loc.lat, loc.lon, settings.portugalSource(loc.municipio))
+    /** Lo que se acredita de un sitio de Portugal: «IPMA · Porto» u «Open-Meteo». */
+    fun portugalLabel(loc: SavedLocation) = when (portugalSource(loc)) {
+        PortugalSource.IPMA -> Ipma.forecastPoint(loc.municipio, loc.lat, loc.lon)?.let { "IPMA · ${it.first.name}" } ?: "IPMA"
+        PortugalSource.OPEN_METEO -> "Open-Meteo"
+    }
     private val _pages = MutableStateFlow<Map<String, CityWeather>>(emptyMap())
     val pages: StateFlow<Map<String, CityWeather>> = _pages.asStateFlow()
 
@@ -201,6 +232,11 @@ class WeatherRepo(
     fun primed(loc: SavedLocation): CityWeather {
         _pages.value[LocationStore.keyOf(loc)]?.let { return it }
         val code = loc.municipio
+        if (loc.isPortuguese) {
+            val pt = Ipma.forecastPoint(code, loc.lat, loc.lon)?.first ?: return CityWeather()
+            val c = ipma.cachedForecast(pt.globalId) ?: return CityWeather()
+            return CityWeather(c.first.daily, c.first.hourly, source = "IPMA · ${pt.name}", loadedAt = System.currentTimeMillis() - c.second * 1000)
+        }
         val d = aemet.cachedDaily(code); val h = aemet.cachedHourly(code)
         val o = loc.idema?.let { aemet.cachedObservation(it) }
         val oldest = listOfNotNull(d?.second, h?.second).maxOrNull()
@@ -216,6 +252,12 @@ class WeatherRepo(
         val code = loc.municipio
         var result = CityWeather()
         val airJob = scope.async { OpenMeteo.air(loc.lat, loc.lon) }
+        if (loc.isPortuguese) {
+            result = loadPortugal(loc, if (force) null else 30 * 60L) ?: primed(loc).copy(error = "No se pudo actualizar")
+            result = result.copy(air = airJob.await(), loading = false)
+            _pages.update { it + (key to result) }
+            return result
+        }
         if (aemet.configured && code.isNotEmpty()) {
             try {
                 val d = scope.async { runCatching { aemet.daily(code, maxAge) }.getOrNull() }
@@ -241,6 +283,29 @@ class WeatherRepo(
         result = result.copy(air = airJob.await(), loading = false)
         _pages.update { it + (key to result) }
         return result
+    }
+
+    /**
+     * Portugal (`IPMAService.load`): los avisos son del IPMA siempre; la previsión, del IPMA si
+     * su punto está cerca (o se eligió), y si no de Open-Meteo con el punto exacto.
+     */
+    private suspend fun loadPortugal(loc: SavedLocation, maxAge: Long?): CityWeather? {
+        val point = Ipma.forecastPoint(loc.municipio, loc.lat, loc.lon)
+        val alerts = scope.async { point?.let { ipma.alerts(it.first.warningArea, maxAge) } ?: emptyList() }
+        return when (portugalSource(loc)) {
+            PortugalSource.IPMA -> {
+                val pt = point?.first ?: return null
+                val obs = scope.async { runCatching { ipma.observation(loc.lat, loc.lon, if (maxAge == null) null else 10 * 60L) }.getOrNull() }
+                val fc = runCatching { ipma.forecast(pt.globalId, maxAge) }.getOrNull() ?: return null
+                val o = obs.await()
+                o?.second?.let { (name, km) -> if (loc.stationName != name) onStation(loc.copy(stationName = name, stationKm = km)) }
+                CityWeather(fc.daily, fc.hourly, o?.first?.takeIf { it.isNotEmpty() }, alerts = alerts.await(), source = "IPMA · ${pt.name}", loadedAt = System.currentTimeMillis())
+            }
+            PortugalSource.OPEN_METEO -> {
+                val om = OpenMeteo.forecast(loc.lat, loc.lon) ?: return null
+                CityWeather(om.daily, om.hourly, om.obs, alerts = alerts.await(), source = "Open-Meteo", loadedAt = System.currentTimeMillis())
+            }
+        }
     }
 
     /** Las estaciones de AEMET más cercanas, con su distancia (hace falta la clave). */

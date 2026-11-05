@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <!-- La sesión de Netatmo de Calefacción, compartida (net/Netatmo.kt, SharedSession) -->
+    <queries>
+        <package android:name="es.altamirano.calefaccion" />
+        <provider android:authorities="es.altamirano.calefaccion.netatmo" />
+    </queries>
+
     <application
         android:name=".TiempoApp"
         android:allowBackup="true"
@@ -19,6 +25,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Los widgets abren su pestaña: tiempo://aemet, netatmo, cosmos, tides -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tiempo" />
+            </intent-filter>
+            <!-- La vuelta del inicio de sesión de Netatmo (hay que darla de alta en dev.netatmo.com) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tiempo-netatmo" android:host="oauth-callback" />
+            </intent-filter>
         </activity>
 
         <activity android:name=".widget.WidgetConfigActivity" android:exported="true">
@@ -28,6 +47,18 @@
         <receiver android:name=".widget.WeatherWidgetReceiver" android:exported="true" android:label="Tiempo">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_weather" />
+        </receiver>
+        <receiver android:name=".widget.NetatmoWidgetReceiver" android:exported="true" android:label="Netatmo">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_netatmo" />
+        </receiver>
+        <receiver android:name=".widget.SunMoonWidgetReceiver" android:exported="true" android:label="Sol y Luna">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_sunmoon" />
+        </receiver>
+        <receiver android:name=".widget.TidesWidgetReceiver" android:exported="true" android:label="Mareas">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_tides" />
         </receiver>
     </application>
 </manifest>

@@ -15,6 +15,15 @@ import es.altamirano.tiempo.core.PhaseEvent
 import es.altamirano.tiempo.core.TideStation
 import es.altamirano.tiempo.core.portsByDistance
 import android.Manifest
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import java.time.ZoneOffset
+import kotlinx.coroutines.flow.MutableStateFlow
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -110,21 +119,71 @@ import kotlin.math.roundToInt
 private val Spanish = Locale("es", "ES")
 private val hhmm = DateTimeFormatter.ofPattern("HH:mm")
 
+/** Lo que pide abrir un widget (`WidgetDeepLink`): la pestaña y, en Mareas, bajar hasta su tarjeta. */
+private val deepLink = MutableStateFlow<Pair<String, Long>?>(null)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handle(intent)
         setContent { TiempoTheme { Root() } }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    private fun handle(intent: Intent?) {
+        val uri = intent?.data ?: return
+        when (uri.scheme) {
+            "tiempo" -> deepLink.value = (uri.host ?: "") to System.nanoTime()
+            // La vuelta del inicio de sesión de Netatmo en el navegador.
+            "tiempo-netatmo" -> app.scope.launch {
+                try {
+                    app.netatmo.api.handleCallback(uri)
+                    app.netatmo.recheck()
+                    app.netatmo.load(force = true)
+                    Toast.makeText(this@MainActivity, "Sesión de Netatmo iniciada", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this@MainActivity, e.message ?: "No se pudo iniciar sesión", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        setIntent(Intent(intent).setData(null))
     }
 }
 
+private const val TAB_WEATHER = 0; private const val TAB_COSMOS = 1; private const val TAB_ACTUAL = 2; private const val TAB_SETTINGS = 3
+
 @Composable
 private fun Root() {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val app = LocalContext.current.app
+    var tab by rememberSaveable { mutableIntStateOf(TAB_WEATHER) }
     var page by rememberSaveable { mutableIntStateOf(0) }
+    var tidesSignal by remember { mutableIntStateOf(0) }
+    val netatmoOn by app.netatmo.enabled.collectAsStateWithLifecycle()
+    val link by deepLink.collectAsStateWithLifecycle()
+    LaunchedEffect(link) {
+        when (link?.first) {
+            "aemet" -> tab = TAB_WEATHER
+            "netatmo" -> tab = if (netatmoOn) TAB_ACTUAL else TAB_WEATHER
+            "cosmos" -> tab = TAB_COSMOS
+            "tides" -> { tab = TAB_COSMOS; tidesSignal++ }
+        }
+    }
+    LaunchedEffect(Unit) { app.netatmo.recheck() }
+    if (tab == TAB_ACTUAL && !netatmoOn) tab = TAB_WEATHER
+    // Sin clave de AEMET todo sale de Open-Meteo: la pestaña se llama «Tiempo», no «AEMET».
+    val aemetKey by app.settings.aemetKey.collectAsStateWithLifecycle()
     Scaffold(containerColor = MaterialTheme.colorScheme.background, bottomBar = {
         NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-            listOf(Triple("Tiempo", Icons.Filled.Cloud, 0), Triple("Sol·Luna", Icons.Filled.Brightness4, 1), Triple("Ajustes", Icons.Filled.Settings, 2)).forEach { (label, icon, i) ->
+            listOfNotNull(Triple(if (aemetKey.isNotBlank()) "AEMET" else "Tiempo", Icons.Filled.Cloud, TAB_WEATHER),
+                Triple("Sol·Luna", Icons.Filled.Brightness4, TAB_COSMOS),
+                // La pestaña de Netatmo sólo sale con Netatmo configurado, al final de la barra.
+                if (netatmoOn) Triple("Actual", Icons.Filled.Thermostat, TAB_ACTUAL) else null,
+                Triple("Ajustes", Icons.Filled.Settings, TAB_SETTINGS)).forEach { (label, icon, i) ->
                 NavigationBarItem(tab == i, { tab = i }, { Icon(icon, null) }, label = { Text(label) },
                     colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary,
                         selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primaryContainer))
@@ -133,8 +192,9 @@ private fun Root() {
     }) { padding ->
         Box(Modifier.padding(bottom = padding.calculateBottomPadding()).fillMaxSize()) {
             when (tab) {
-                0 -> WeatherTab(page) { page = it }
-                1 -> CosmosTab(page)
+                TAB_WEATHER -> WeatherTab(page) { page = it }
+                TAB_COSMOS -> CosmosTab(page, tidesSignal)
+                TAB_ACTUAL -> ActualTab()
                 else -> SettingsTab()
             }
         }
@@ -243,21 +303,35 @@ private fun provinceName(code: String): String? = mapOf(
 // --- Sol·Luna y mareas ---------------------------------------------------------------------
 
 @Composable
-private fun CosmosTab(page: Int) {
+private fun CosmosTab(page: Int, tidesSignal: Int = 0) {
     val app = LocalContext.current.app
     val saved by app.locations.saved.collectAsStateWithLifecycle()
     val current by app.locations.current.collectAsStateWithLifecycle()
     val all = listOfNotNull(current) + saved
     val loc = all.getOrNull(page) ?: all.firstOrNull() ?: return
     val zone = loc.zone
-    val today = LocalDate.now(zone)
-    // El día que refleja la tarjeta del sol: el que se toque en el calendario, si no hoy.
-    var selectedDay by remember(loc) { mutableStateOf<LocalDate?>(null) }
+    val realToday = LocalDate.now(zone)
+    // La fecha elegida arriba (`selectedDate` en iOS): mueve el sol, la luna, el calendario y las
+    // mareas. Dentro, el día que se toque en el calendario manda sobre ella.
+    var baseDate by rememberSaveable { mutableStateOf(realToday.toEpochDay()) }
+    val today = LocalDate.ofEpochDay(baseDate)
+    var picking by remember { mutableStateOf(false) }
+    var selectedDay by remember(loc, baseDate) { mutableStateOf<LocalDate?>(null) }
     val day = selectedDay ?: today
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(tidesSignal) { if (tidesSignal > 0) listState.animateScrollToItem(6) }
+    if (picking) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(onDismissRequest = { picking = false },
+            confirmButton = { TextButton(onClick = {
+                state.selectedDateMillis?.let { baseDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay() }
+                picking = false }) { Text("Aceptar") } },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancelar") } }) { DatePicker(state) }
+    }
     val sun = remember(loc, day) { SunMoon.sun(day, loc.lat, loc.lon, zone) }
-    val moon = remember(loc, day) { SunMoon.moon(day, loc.lat, loc.lon, zone, if (day == today) Instant.now() else day.atTime(12, 0).atZone(zone).toInstant()) }
+    val moon = remember(loc, day) { SunMoon.moon(day, loc.lat, loc.lon, zone, if (day == realToday) Instant.now() else day.atTime(12, 0).atZone(zone).toInstant()) }
     val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant()
-    val phases = remember(today) { Astro.phases(monthStart, 44).filter { !it.at.isAfter(monthStart.atZone(zone).plusYears(1).toInstant()) } }
+    val phases = remember(today, zone) { Astro.phases(monthStart, 44).filter { !it.at.isAfter(monthStart.atZone(zone).plusYears(1).toInstant()) } }
     val events = remember(loc.lat, loc.lon, today) { Astro.events(monthStart, loc.lat, loc.lon, zone) }
     val portId by app.settings.tidePort.collectAsStateWithLifecycle()
     val port = IHM_STATIONS.firstOrNull { it.id == portId } ?: IHM_STATIONS.first { it.id == "4" }
@@ -265,8 +339,16 @@ private fun CosmosTab(page: Int) {
     LaunchedEffect(port, day) { tides = runCatching { app.tides.days(port, day) }.getOrDefault(emptyList()) }
     fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("Sol·Luna · ${loc.name}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp)) }
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { picking = true }) {
+                    Icon(Icons.Filled.CalendarMonth, null); Text("  " + today.format(DateTimeFormatter.ofPattern("d MMM yyyy", Spanish)))
+                }
+                if (today != realToday) TextButton(onClick = { baseDate = realToday.toEpochDay() }) { Text("Hoy") }
+            }
+        }
         item {
             Card {
                 Column {
@@ -276,7 +358,8 @@ private fun CosmosTab(page: Int) {
                     }
                     sun.daylightMinutes?.let { Text("Duración del día: ${it / 60} h ${"%02d".format(it % 60)} min", Modifier.padding(16.dp, 10.dp),
                         fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    if (selectedDay != null && selectedDay != today) TextButton(onClick = { selectedDay = null }, Modifier.padding(horizontal = 8.dp)) { Text("Volver a hoy") }
+                    if (selectedDay != null && selectedDay != today) TextButton(onClick = { selectedDay = null }, Modifier.padding(horizontal = 8.dp)) {
+                        Text(if (today == realToday) "Volver a hoy" else "Volver al ${today.format(DateTimeFormatter.ofPattern("d MMM", Spanish))}") }
                 }
             }
         }
@@ -490,6 +573,7 @@ private fun SettingsTab() {
                 }
             }
         }
+        item { NetatmoSettings() }
         item {
             Card {
                 Column(Modifier.padding(vertical = 8.dp)) {
@@ -528,7 +612,7 @@ private fun SettingsTab() {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Datos", fontWeight = FontWeight.SemiBold)
                     listOf("Predicción, observaciones y avisos: © AEMET", "Sin clave, y aire, polen y UV: Open-Meteo (CC BY 4.0)",
-                        "Mareas: © Instituto Hidrográfico de la Marina", "Pueblos y aldeas: GeoNames (CC BY 4.0)",
+                        "Mareas: © Instituto Hidrográfico de la Marina", "Portugal: IPMA (previsión, observaciones y avisos)", "Pueblos y aldeas: GeoNames (CC BY 4.0)",
                         "Municipios: maestro de municipios de AEMET").forEach { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }

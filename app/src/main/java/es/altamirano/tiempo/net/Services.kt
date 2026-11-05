@@ -221,3 +221,40 @@ class Tides(private val cache: DiskCache) {
     }
 }
 
+
+/**
+ * El IPMA, sin clave (`IPMAService.swift`): previsión de las 35 localidades, observaciones de
+ * unas 200 estaciones y avisos. Con la misma caché en disco que AEMET: lo reciente se sirve sin
+ * pedir, y si la red falla, lo viejo.
+ */
+class IpmaService(private val cache: DiskCache) {
+    private val openData = "https://api.ipma.pt/open-data"
+    private val publicData = "https://api.ipma.pt/public-data"
+
+    private suspend fun fetch(url: String, key: String, maxAge: Long?): String {
+        val c = cache.load(key)
+        if (maxAge != null && c != null && c.second < maxAge) return String(c.first)
+        return try {
+            val (code, body) = get(url)
+            if (code !in 200..299) throw ServiceError("IPMA: error $code")
+            cache.save(key, body); String(body)
+        } catch (e: Exception) { c?.let { String(it.first) } ?: throw e }
+    }
+
+    suspend fun forecast(globalId: Int, maxAge: Long?) = es.altamirano.tiempo.core.Ipma.adapt(fetch("$publicData/forecast/aggregate/$globalId.json", "ipma_fc_$globalId", maxAge))
+    fun cachedForecast(globalId: Int) = cache.load("ipma_fc_$globalId")?.let { (b, age) -> runCatching { es.altamirano.tiempo.core.Ipma.adapt(String(b)) to age }.getOrNull() }
+
+    suspend fun stations() = es.altamirano.tiempo.core.Ipma.stations(fetch("$openData/observation/meteorology/stations/stations.json", "ipma_stations", 24 * 3600L))
+
+    /** La estación más cercana con su distancia, y sus últimas horas. */
+    suspend fun observation(lat: Double, lon: Double, maxAge: Long?): Pair<List<ObsRecord>, Pair<String, Double>?> {
+        val near = runCatching { stations() }.getOrDefault(emptyList()).map { it to es.altamirano.tiempo.core.Places.distanceKm(lat, lon, it.lat, it.lon) }
+            .minByOrNull { it.second } ?: return emptyList<ObsRecord>() to null
+        val obs = runCatching { es.altamirano.tiempo.core.Ipma.observations(fetch("$openData/observation/meteorology/stations/observations.json", "ipma_obs", maxAge), near.first.id) }
+            .getOrDefault(emptyList())
+        return obs to (near.first.name to near.second)
+    }
+
+    suspend fun alerts(area: String, maxAge: Long?): List<AemetAlert> =
+        runCatching { es.altamirano.tiempo.core.Ipma.alerts(fetch("$openData/forecast/warnings/warnings_www.json", "ipma_warnings", maxAge), area) }.getOrDefault(emptyList())
+}
