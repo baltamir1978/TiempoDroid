@@ -7,7 +7,7 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.1: compila y pasan 18 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.1.apk`.
+**0.2: compila y pasan 22 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.2.apk`.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
@@ -29,12 +29,19 @@ Hecho, traducido de la app de iOS:
   temperatura con las seis escalas de iOS copiadas exactas** (`core/TempScale.kt`, con su
   degradado en OKLab y la tinta azul marino `#0B2236`); avisos a los widgets agrupados (3 s);
   refresco cada 3 h con WorkManager.
+- **Municipio por término municipal** (0.2): punto en polígono sobre `assets/Recintos.bin` (IGN,
+  vía es-atlas 0.6.0; se genera con `Tools/build_recintos.py`); el punto más cercano sólo si no
+  cae en ninguno. Con sólo el punto, en San Blas salía Coslada (el de Madrid está en Sol).
+  `assets/Distritos.tsv`: los distritos de Madrid, que el nomenclátor no trae.
+- **Selector de estación** (tocar la tarjeta del sitio): Automática o una de las 15 más cercanas.
+- **Mareas siempre**, con el puerto elegido guardado (Llanes por omisión, como en iOS), y
+  **calendario lunar con eventos astronómicos** (`core/Astro.kt`: Meeus 49 y 27, tablas de iOS).
 - Arreglado respecto a iOS: la probabilidad de lluvia de la franja «2002» (20 a 02 h, cruza la
   medianoche) no salía nunca; aquí sí.
 
-Falta: **Netatmo** (pestaña Actual, gráficas y su widget), **Portugal con el IPMA**, eventos
-astronómicos y calendario lunar, widgets Sol·Luna y Mareas, selector de estación AEMET,
-traducciones (en, gl, eu, ca: ahora sólo español) y probar en el móvil.
+Falta: **Netatmo** (pestaña Actual, gráficas y su widget), **Portugal con el IPMA**, widgets
+Sol·Luna y Mareas, selector de fecha en Sol·Luna, traducciones (en, gl, eu, ca: ahora sólo
+español) y probar en el móvil.
 
 **La clave de AEMET de Bruno caducó** (había que renovarla antes del 15-oct-2026): AEMET contesta
 401 a todo. Mientras no la renueve en opendata.aemet.es, la app tira de Open-Meteo. Va en
