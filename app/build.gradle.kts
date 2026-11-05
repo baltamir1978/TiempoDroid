@@ -22,8 +22,8 @@ android {
         applicationId = "es.altamirano.tiempo"
         minSdk = 31          // Android 12
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.2"
         buildConfigField("String", "AEMET_API_KEY", localString("aemet.apiKey"))
     }
 

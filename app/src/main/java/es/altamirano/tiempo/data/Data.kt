@@ -51,6 +51,8 @@ data class SavedLocation(
     val stationKm: Double? = null,
     /** El municipio de AEMET de la ubicación del GPS (su `code` es el centinela). */
     val ine: String? = null,
+    /** La estación la eligió Bruno a mano; si no, la más cercana («Automática»). */
+    val stationPinned: Boolean = false,
 ) {
     /** El código con el que pedir la previsión. */
     val municipio: String get() = if (isCurrent) ine ?: "" else code
@@ -78,13 +80,17 @@ class Settings(context: Context) {
     fun setAemetKey(k: String) { _key.value = k.trim(); prefs.edit().putString("aemet", k.trim()).apply() }
     fun setScale(s: TempScale) { _scale.value = s; prefs.edit().putString("escala", s.name).apply() }
 
+    /** El puerto de las mareas (en iOS, `tide_station_id`; por omisión Llanes). */
+    private val _port = MutableStateFlow(prefs.getString("puerto", "4")!!)
+    val tidePort: StateFlow<String> = _port.asStateFlow()
+    fun setTidePort(id: String) { _port.value = id; prefs.edit().putString("puerto", id).apply() }
+
     /** Ciudad y fondo de cada widget («Editar widget» en iOS). */
     fun widgetCity(id: Int): String? = prefs.getString("widget-$id", null)
     fun widgetTempBackground(id: Int): Boolean = prefs.getBoolean("widget-$id-temp", true)
     fun setWidget(id: Int, code: String, tempBackground: Boolean) =
         prefs.edit().putString("widget-$id", code).putBoolean("widget-$id-temp", tempBackground).apply()
 
-    fun stationOverride(code: String): String? = prefs.getString("estacion-$code", null)
 }
 
 /**
@@ -150,9 +156,10 @@ class LocationStore(private val context: Context, private val places: () -> Plac
         val p = places()
         val m = p.nearestMunicipio(lat, lon) ?: return null
         val name = p.nearestNucleo(lat, lon, m.code)?.name ?: m.name
-        // Si sigues en el mismo municipio, se conserva la estación que ya tenía.
-        val keep = _current.value?.takeIf { it.ine == m.code }
-        return SavedLocation(SavedLocation.CURRENT, name, m.name, lat, lon, keep?.idema, keep?.stationName, keep?.stationKm, m.code)
+        // La estación elegida a mano se conserva mientras sigas en el mismo municipio; la
+        // automática se vuelve a buscar, que en Madrid la más cercana cambia de un barrio a otro.
+        val keep = _current.value?.takeIf { it.ine == m.code && it.stationPinned }
+        return SavedLocation(SavedLocation.CURRENT, name, m.name, lat, lon, keep?.idema, keep?.stationName, keep?.stationKm, m.code, keep != null)
     }
 
     companion object {
@@ -179,7 +186,12 @@ data class CityWeather(
  * El tiempo de cada ubicación, cada una con su copia: una ciudad ya visitada sale al instante y
  * nunca se ve el tiempo de la anterior bajo el nombre de la nueva. Con AEMET, si falla, Open-Meteo.
  */
-class WeatherRepo(context: Context, private val scope: CoroutineScope, settings: Settings, private val stations: suspend () -> List<ObsRecord>) {
+class WeatherRepo(
+    context: Context, private val scope: CoroutineScope, settings: Settings,
+    private val stations: suspend () -> List<ObsRecord>,
+    /** Para guardar en la ubicación la estación automática, con su nombre y distancia. */
+    private val onStation: (SavedLocation) -> Unit = {},
+) {
     val cache = DiskCache(File(context.cacheDir, "aemet"))
     val aemet = Aemet(cache) { settings.aemetKey.value }
     private val _pages = MutableStateFlow<Map<String, CityWeather>>(emptyMap())
@@ -208,7 +220,9 @@ class WeatherRepo(context: Context, private val scope: CoroutineScope, settings:
             try {
                 val d = scope.async { runCatching { aemet.daily(code, maxAge) }.getOrNull() }
                 val h = scope.async { runCatching { aemet.hourly(code, maxAge) }.getOrNull() }
-                val idema = loc.idema ?: nearestStation(loc)
+                val idema = loc.idema ?: nearbyStations(loc.lat, loc.lon, 1).firstOrNull()?.let { (st, km) ->
+                    onStation(withStation(loc, st, km, pinned = false)); st.idema
+                }
                 val o = idema?.let { runCatching { aemet.observation(it, if (force) null else 10 * 60L) }.getOrNull() }
                 val a = runCatching { aemet.alerts(code, loc.lat, loc.lon, if (force) null else 30 * 60L) }.getOrDefault(emptyList())
                 val dd = d.await(); val hh = h.await()
@@ -229,10 +243,18 @@ class WeatherRepo(context: Context, private val scope: CoroutineScope, settings:
         return result
     }
 
-    /** La estación de observación más cercana (si hay clave): se guarda en la ubicación. */
-    private suspend fun nearestStation(loc: SavedLocation): String? {
-        val list = runCatching { stations() }.getOrDefault(emptyList())
-        val best = list.minByOrNull { Places.distanceKm(loc.lat, loc.lon, it.lat!!, it.lon!!) } ?: return null
-        return best.idema
+    /** Las estaciones de AEMET más cercanas, con su distancia (hace falta la clave). */
+    suspend fun nearbyStations(lat: Double, lon: Double, n: Int = 15): List<Pair<ObsRecord, Double>> =
+        runCatching { stations() }.getOrDefault(emptyList())
+            .map { it to Places.distanceKm(lat, lon, it.lat!!, it.lon!!) }.sortedBy { it.second }.take(n)
+
+    companion object {
+        fun withStation(loc: SavedLocation, st: ObsRecord, km: Double, pinned: Boolean) =
+            loc.copy(idema = st.idema, stationName = stationName(st.ubi ?: st.idema ?: ""), stationKm = km, stationPinned = pinned)
+
+        /** «MADRID, CIUDAD UNIVERSITARIA» → «Madrid, Ciudad Universitaria». */
+        fun stationName(ubi: String): String = ubi.lowercase(java.util.Locale("es", "ES")).split(" ").joinToString(" ") { w ->
+            if (w in setOf("de", "del", "la", "las", "los", "el", "y")) w else w.replaceFirstChar { it.titlecase() }
+        }.replaceFirstChar { it.titlecase() }
     }
 }

@@ -18,21 +18,36 @@ data class Nucleo(val name: String, val lat: Double, val lon: Double, val ine: S
 
 data class Suggestion(val code: String, val name: String, val municipality: String?, val lat: Double, val lon: Double, val rank: Int)
 
-class Places(municipiosTsv: InputStream, nucleosTsv: InputStream) {
+class Places(municipiosTsv: InputStream, nucleosTsv: InputStream, recintos: InputStream? = null, distritos: InputStream? = null) {
     val municipios: List<Municipio> = municipiosTsv.bufferedReader().lineSequence().mapNotNull { l ->
         val f = l.split('\t'); if (f.size < 4) null else Municipio(f[0], f[1], f[2].toDouble(), f[3].toDouble())
     }.toList()
     private val byCode = municipios.associateBy { it.code }
 
-    /** Ordenados por latitud, como en el fichero de iOS. */
-    val nucleos: List<Nucleo> = nucleosTsv.bufferedReader().lineSequence().mapNotNull { l ->
-        val f = l.split('\t'); if (f.size != 5) null
-        else f[0].toDoubleOrNull()?.let { la -> f[1].toDoubleOrNull()?.let { lo -> Nucleo(f[4], la, lo, f[2], f[3].toIntOrNull() ?: 0) } }
-    }.toList()
+    /**
+     * Ordenados por latitud (el fichero de iOS casi lo está, no del todo), con los distritos de
+     * las ciudades grandes (`Distritos.tsv`), que el nomenclátor no trae: en San Blas salía
+     * «Las Mercedes».
+     */
+    val nucleos: List<Nucleo> = listOfNotNull(nucleosTsv, distritos).flatMap { s ->
+        s.bufferedReader().lineSequence().mapNotNull { l ->
+            val f = l.split('\t'); if (f.size != 5) null
+            else f[0].toDoubleOrNull()?.let { la -> f[1].toDoubleOrNull()?.let { lo -> Nucleo(f[4], la, lo, f[2], f[3].toIntOrNull() ?: 0) } }
+        }.toList()
+    }.sortedBy { it.lat }
 
     fun municipio(code: String) = byCode[code]
 
-    fun nearestMunicipio(lat: Double, lon: Double): Municipio? = municipios.minByOrNull { sqDist(it.lat, it.lon, lat, lon) }
+    private val terms: Recintos? = recintos?.let { Recintos(it) }
+
+    /**
+     * El municipio en cuyo término cae el punto (`Recintos.bin`); si no cae en ninguno (en el
+     * mar, en Portugal) o AEMET no lo tiene, el de punto más cercano. Sólo con el punto no basta:
+     * el de Madrid está en Sol, y desde San Blas queda más cerca el de Coslada.
+     */
+    fun nearestMunicipio(lat: Double, lon: Double): Municipio? =
+        terms?.containing(lat, lon)?.let { byCode["%05d".format(it)] }
+            ?: municipios.minByOrNull { sqDist(it.lat, it.lon, lat, lon) }
 
     /**
      * El núcleo habitado más cercano (a 4 km como mucho), dentro del municipio si se sabe: así
@@ -99,6 +114,53 @@ class Places(municipiosTsv: InputStream, nucleosTsv: InputStream) {
             val dLat = lat - la; val dLon = (lon - lo) * cos(la * PI / 180)
             return dLat * dLat + dLon * dLon
         }
+    }
+}
+
+/** Los términos municipales del IGN (`Tools/build_recintos.py`): punto en polígono, par-impar. */
+class Recintos(input: InputStream) {
+    private class Term(val code: Int, val rings: List<ShortArray>, val x0: Int, val y0: Int, val x1: Int, val y1: Int)
+    private val sx: Double; private val sy: Double; private val tx: Double; private val ty: Double
+    private val terms: List<Term>
+
+    init {
+        val d = java.io.DataInputStream(input.buffered())
+        val magic = ByteArray(4).also { d.readFully(it) }
+        require(String(magic) == "REC1") { "Recintos.bin no válido" }
+        sx = d.readDouble(); sy = d.readDouble(); tx = d.readDouble(); ty = d.readDouble()
+        terms = List(d.readInt()) {
+            val code = d.readInt()
+            var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
+            val rings = List(d.readShort().toInt()) {
+                val r = ShortArray(d.readInt() * 2)
+                for (i in r.indices) r[i] = d.readShort()
+                for (i in r.indices step 2) {
+                    val x = r[i].toInt(); val y = r[i + 1].toInt()
+                    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+                }
+                r
+            }
+            Term(code, rings, x0, y0, x1, y1)
+        }
+    }
+
+    /** Código INE del municipio que contiene el punto, o null. */
+    fun containing(lat: Double, lon: Double): Int? {
+        val x = (lon - tx) / sx; val y = (lat - ty) / sy
+        return terms.firstOrNull { t -> x >= t.x0 && x <= t.x1 && y >= t.y0 && y <= t.y1 && inside(t.rings, x, y) }?.code
+    }
+
+    private fun inside(rings: List<ShortArray>, x: Double, y: Double): Boolean {
+        var c = false
+        for (r in rings) {
+            var j = r.size - 2
+            for (i in r.indices step 2) {
+                val xi = r[i].toDouble(); val yi = r[i + 1].toDouble(); val xj = r[j].toDouble(); val yj = r[j + 1].toDouble()
+                if ((yi > y) != (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c
+                j = i
+            }
+        }
+        return c
     }
 }
 

@@ -2,6 +2,18 @@
 
 package es.altamirano.tiempo.ui
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.style.TextAlign
+import es.altamirano.tiempo.core.Astro
+import es.altamirano.tiempo.core.AstroEvent
+import es.altamirano.tiempo.core.IHM_STATIONS
+import es.altamirano.tiempo.core.PhaseEvent
+import es.altamirano.tiempo.core.TideStation
+import es.altamirano.tiempo.core.portsByDistance
 import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -239,14 +251,18 @@ private fun CosmosTab(page: Int) {
     val loc = all.getOrNull(page) ?: all.firstOrNull() ?: return
     val zone = loc.zone
     val today = LocalDate.now(zone)
-    val sun = remember(loc, today) { SunMoon.sun(today, loc.lat, loc.lon, zone) }
-    val moon = remember(loc, today) { SunMoon.moon(today, loc.lat, loc.lon, zone, Instant.now()) }
-    val phases = remember(today) { SunMoon.nextPhases(Instant.now()) }
-    val ports = remember(loc) { portsByDistance(loc.lat, loc.lon).take(5) }
-    var portIndex by remember(loc) { mutableIntStateOf(0) }
-    var tides by remember(loc, portIndex) { mutableStateOf<List<Pair<LocalDate, List<Tide>>>?>(null) }
-    val nearCoast = ports.first().second < 60
-    LaunchedEffect(loc, portIndex) { if (nearCoast) tides = runCatching { app.tides.days(ports[portIndex].first, today) }.getOrDefault(emptyList()) }
+    // El día que refleja la tarjeta del sol: el que se toque en el calendario, si no hoy.
+    var selectedDay by remember(loc) { mutableStateOf<LocalDate?>(null) }
+    val day = selectedDay ?: today
+    val sun = remember(loc, day) { SunMoon.sun(day, loc.lat, loc.lon, zone) }
+    val moon = remember(loc, day) { SunMoon.moon(day, loc.lat, loc.lon, zone, if (day == today) Instant.now() else day.atTime(12, 0).atZone(zone).toInstant()) }
+    val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant()
+    val phases = remember(today) { Astro.phases(monthStart, 44).filter { !it.at.isAfter(monthStart.atZone(zone).plusYears(1).toInstant()) } }
+    val events = remember(loc.lat, loc.lon, today) { Astro.events(monthStart, loc.lat, loc.lon, zone) }
+    val portId by app.settings.tidePort.collectAsStateWithLifecycle()
+    val port = IHM_STATIONS.firstOrNull { it.id == portId } ?: IHM_STATIONS.first { it.id == "4" }
+    var tides by remember(port, day) { mutableStateOf<List<Pair<LocalDate, List<Tide>>>?>(null) }
+    LaunchedEffect(port, day) { tides = runCatching { app.tides.days(port, day) }.getOrDefault(emptyList()) }
     fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -254,12 +270,13 @@ private fun CosmosTab(page: Int) {
         item {
             Card {
                 Column {
-                    CardTitle("Sol", today.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Spanish)))
+                    CardTitle("Sol", day.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Spanish)))
                     Row(Modifier.fillMaxWidth().padding(16.dp, 4.dp), horizontalArrangement = Arrangement.SpaceAround) {
                         Big("🌅", t(sun.sunrise), "Orto"); Big("☀️", t(sun.noon), "Mediodía"); Big("🌇", t(sun.sunset), "Ocaso")
                     }
                     sun.daylightMinutes?.let { Text("Duración del día: ${it / 60} h ${"%02d".format(it % 60)} min", Modifier.padding(16.dp, 10.dp),
                         fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (selectedDay != null && selectedDay != today) TextButton(onClick = { selectedDay = null }, Modifier.padding(horizontal = 8.dp)) { Text("Volver a hoy") }
                 }
             }
         }
@@ -267,50 +284,173 @@ private fun CosmosTab(page: Int) {
             Card {
                 Column {
                     CardTitle("Luna", "${(moon.illumination * 100).roundToInt()}% iluminada")
-                    Row(Modifier.fillMaxWidth().padding(16.dp, 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp, 4.dp).padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(moon.phase.emoji, fontSize = 52.sp)
                         Column(Modifier.padding(start = 16.dp).weight(1f)) {
                             Text(moon.phase.label, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                             Text("Sale ${t(moon.rise)} · se pone ${t(moon.set)}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    HorizontalDivider(Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    phases.forEach { (p, at) ->
-                        Row(Modifier.fillMaxWidth().padding(16.dp, 8.dp)) {
-                            Text("${p.emoji}  ${p.label}", Modifier.weight(1f), fontSize = 14.sp)
-                            Text(at.atZone(zone).format(DateTimeFormatter.ofPattern("EEE d MMM, HH:mm", Spanish)), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
                 }
             }
         }
-        if (nearCoast) item {
-            Card {
-                Column {
-                    CardTitle("Mareas · ${ports[portIndex].first.name}", "${ports[portIndex].second.roundToInt()} km")
-                    Row(Modifier.padding(horizontal = 8.dp)) {
-                        ports.take(3).forEachIndexed { i, (p, _) ->
-                            TextButton(onClick = { portIndex = i }) { Text(p.name.substringBefore(" ("), fontSize = 12.sp,
-                                fontWeight = if (i == portIndex) FontWeight.Bold else null) }
-                        }
-                    }
-                    when (val list = tides) {
-                        null -> Text("Cargando…", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        else -> list.forEach { (day, ts) ->
-                            Text(if (day == today) "Hoy" else "Mañana", Modifier.padding(16.dp, 6.dp), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                            if (ts.isEmpty()) Text("Sin datos del IHM", Modifier.padding(horizontal = 16.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            ts.forEach { tide ->
-                                Row(Modifier.fillMaxWidth().background(if (tide.high) Color(0x1A007AFF) else Color(0x1AFFC53D)).padding(16.dp, 8.dp)) {
-                                    Text(if (tide.high) "🌊 Pleamar" else "🏖 Bajamar", Modifier.weight(1f), fontSize = 14.sp)
-                                    Text(tide.at.atZone(app.tides.zone(ports[portIndex].first)).format(hhmm), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                    Text("   ${String.format(Locale.getDefault(), "%.2f", tide.height)} m", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        item { MoonCalendar(today, zone, phases, events, selectedDay) { selectedDay = it } }
+        item { UpcomingEvents(today, zone, events) }
+        item { TidesCard(loc, port, day, today, tides, app.tides.zone(port)) { app.settings.setTidePort(it) } }
+    }
+}
+
+private val RowLilac = Color(0x269B7FE0); private val RowWarm = Color(0x26FFC53D); private val GreenSoft = Color(0x26239E7B)
+
+/** El calendario del mes: fases y eventos de cada día; tocar un día lleva a él la tarjeta del sol. */
+@Composable
+private fun MoonCalendar(today: LocalDate, zone: ZoneId, phases: List<PhaseEvent>, events: List<AstroEvent>,
+                         selected: LocalDate?, onSelect: (LocalDate?) -> Unit) {
+    var month by remember(today) { mutableStateOf(today.withDayOfMonth(1)) }
+    val phaseByDay = phases.associateBy { it.at.atZone(zone).toLocalDate() }
+    val eventsByDay = events.groupBy { it.at.atZone(zone).toLocalDate() }
+    Card {
+        Column {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { month = month.minusMonths(1) }, enabled = month > today.withDayOfMonth(1)) { Text("‹", fontSize = 20.sp) }
+                Text(month.format(DateTimeFormatter.ofPattern("LLLL yyyy", Spanish)).replaceFirstChar { it.titlecase() },
+                    Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                TextButton(onClick = { month = month.plusMonths(1) }, enabled = month < today.withDayOfMonth(1).plusMonths(12)) { Text("›", fontSize = 20.sp) }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Row(Modifier.padding(horizontal = 10.dp).padding(top = 8.dp)) {
+                listOf("L", "M", "X", "J", "V", "S", "D").forEach {
+                    Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            val lead = month.dayOfWeek.value - 1
+            val cells = List(lead) { null } + (1..month.lengthOfMonth()).map { month.withDayOfMonth(it) }
+            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                cells.chunked(7).forEach { week ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (week + List(7 - week.size) { null }).forEach { d ->
+                            Box(Modifier.weight(1f).height(40.dp)) {
+                                if (d != null) {
+                                    val ph = phaseByDay[d]; val evs = eventsByDay[d].orEmpty()
+                                    val isSel = d == selected
+                                    val tint = when { isSel -> GreenSoft; ph != null -> if (ph.full) RowWarm else RowLilac
+                                        evs.isNotEmpty() -> GreenSoft; else -> Color.Transparent }
+                                    val has = ph != null || evs.isNotEmpty()
+                                    Column(Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)).background(tint)
+                                        .then(if (isSel || d == today) Modifier.border(if (isSel) 1.5.dp else 1.dp,
+                                            if (isSel) Green else Green.copy(alpha = 0.4f), RoundedCornerShape(6.dp)) else Modifier)
+                                        .clickable { onSelect(if (isSel) null else d) }
+                                        .alpha(if (d < today && !isSel) 0.45f else 1f),
+                                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                        Text("${d.dayOfMonth}", fontSize = 12.sp, fontWeight = if (has) FontWeight.Bold else null,
+                                            color = if (has) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(ph?.emoji ?: evs.firstOrNull()?.emoji ?: " ", fontSize = 11.sp)
+                                    }
+                                    if (ph != null && evs.isNotEmpty()) Box(Modifier.align(Alignment.TopEnd).padding(3.dp).size(5.dp).clip(CircleShape).background(Green))
                                 }
                             }
                         }
                     }
-                    Text("© Instituto Hidrográfico de la Marina", Modifier.padding(16.dp, 10.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            selected?.let { sel ->
+                val ph = phaseByDay[sel]; val evs = eventsByDay[sel].orEmpty()
+                if (ph != null || evs.isNotEmpty()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ph?.let { EventRow(it.emoji, it.label, null, it.at, zone, today, if (it.full) RowWarm else RowLilac) }
+                        evs.forEach { EventRow(it.emoji, it.label, it.details, it.at, zone, today, null) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Los próximos eventos astronómicos: los de los 30 días siguientes, resaltados. */
+@Composable
+private fun UpcomingEvents(today: LocalDate, zone: ZoneId, events: List<AstroEvent>) {
+    val next = events.filter { !it.at.atZone(zone).toLocalDate().isBefore(today) }.take(8)
+    if (next.isEmpty()) return
+    Card {
+        Column(Modifier.padding(bottom = 10.dp)) {
+            CardTitle("Eventos astronómicos")
+            Column(Modifier.padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                next.forEach { EventRow(it.emoji, it.label, it.details, it.at, zone, today, null) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventRow(emoji: String, label: String, details: String?, at: Instant, zone: ZoneId, today: LocalDate, tint: Color?) {
+    val d = at.atZone(zone).toLocalDate()
+    val isToday = d == today; val isPast = d < today; val soon = !isPast && d <= today.plusDays(30)
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+        .background(tint ?: if (isToday) Color(0x33FFD60A) else if (soon) GreenSoft else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        .padding(12.dp, 8.dp).alpha(if (isPast) 0.6f else 1f), verticalAlignment = Alignment.CenterVertically) {
+        Text(emoji, fontSize = 22.sp)
+        Column(Modifier.weight(1f).padding(start = 10.dp)) {
+            Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            details?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(at.atZone(zone).format(DateTimeFormatter.ofPattern("EEE d MMM yyyy", Spanish)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(at.atZone(zone).format(hhmm), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * Las mareas del puerto elegido, también lejos de la costa (como en iOS): los más cercanos
+ * primero con su distancia, que es lo que dice si ese puerto vale por tu sitio, y luego todos.
+ */
+@Composable
+private fun TidesCard(loc: SavedLocation, port: TideStation, day: LocalDate, today: LocalDate,
+                      tides: List<Pair<LocalDate, List<Tide>>>?, portZone: ZoneId, onPort: (String) -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    Card {
+        Column(Modifier.padding(bottom = 10.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("MAREAS", Modifier.weight(1f), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
+                Box {
+                    TextButton(onClick = { menu = true }) {
+                        Text("${port.name} · ${km(Places.distanceKm(loc.lat, loc.lon, port.lat, port.lon))} km ▾", fontSize = 12.sp)
+                    }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        Text("Cerca de ${loc.name}", Modifier.padding(16.dp, 6.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Green)
+                        portsByDistance(loc.lat, loc.lon).take(4).forEach { (p, d) ->
+                            DropdownMenuItem(text = { Text("${p.name} · ${km(d)} km") }, onClick = { onPort(p.id); menu = false })
+                        }
+                        HorizontalDivider()
+                        Text("Todos los puertos", Modifier.padding(16.dp, 6.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Green)
+                        IHM_STATIONS.forEach { p -> DropdownMenuItem(text = { Text(p.name) }, onClick = { onPort(p.id); menu = false }) }
+                    }
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            when (tides) {
+                null -> Text("Cargando…", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> {
+                    if (tides.isEmpty()) Text("Sin datos del IHM", Modifier.padding(16.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    tides.forEach { (d, ts) ->
+                        Text(d.format(DateTimeFormatter.ofPattern("EEEE d MMM", Spanish)).uppercase(Spanish), Modifier.padding(16.dp, 10.dp).padding(bottom = 0.dp),
+                            fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
+                        if (ts.isEmpty()) Text("Sin datos", Modifier.padding(horizontal = 16.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ts.forEach { tide ->
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+                                .background(if (tide.high) Color(0x1A007AFF) else RowWarm).padding(14.dp, 7.dp)) {
+                                Text(if (tide.high) "🌊 Pleamar" else "🏖️ Bajamar", Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text(tide.at.atZone(portZone).format(hhmm), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("   ${String.format(Locale.getDefault(), "%.2f", tide.height)} m", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+            Text("© Instituto Hidrográfico de la Marina", Modifier.padding(16.dp, 10.dp).padding(bottom = 0.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

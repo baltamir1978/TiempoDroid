@@ -162,7 +162,18 @@ class TempScaleTest {
 }
 
 class PlacesTest {
-    private val places = Places(File("src/main/assets/Municipios.tsv").inputStream(), File("src/main/assets/Nucleos.tsv").inputStream())
+    private val places = Places(File("src/main/assets/Municipios.tsv").inputStream(), File("src/main/assets/Nucleos.tsv").inputStream(),
+        File("src/main/assets/Recintos.bin").inputStream(), File("src/main/assets/Distritos.tsv").inputStream())
+
+    @Test fun sanBlasIsMadridNotCoslada() {
+        // Canillejas: el punto de Coslada está más cerca que el de Madrid (Sol).
+        assertEquals("28079", places.nearestMunicipio(40.4410, -3.6080)?.code)
+        assertEquals("28079", places.nearestMunicipio(40.4300, -3.6100)?.code)
+        assertEquals("28049", places.nearestMunicipio(40.4238, -3.5613)?.code)
+        assertEquals("San Blas-Canillejas", places.nearestNucleo(40.4300, -3.6100, "28079")?.name)
+        assertEquals("33036", places.nearestMunicipio(43.4200, -4.7550)?.code) // Llanes
+        assertEquals("38038", places.nearestMunicipio(28.4682, -16.2546)?.code) // Santa Cruz de Tenerife
+    }
 
     @Test fun villageNotMunicipality() {
         // En Niembro, el municipio es Llanes pero el sitio es Niembro.
@@ -176,5 +187,25 @@ class PlacesTest {
         assertEquals("Niembro", r.first().name)
         assertEquals("Llanes", r.first().municipality)
         assertEquals("Segovia", places.search("Segov").first().name)
+    }
+}
+
+class AstroTest {
+    private val madrid = java.time.ZoneId.of("Europe/Madrid")
+
+    @Test fun novemberMoons() {
+        val p = Astro.phases(Instant.parse("2026-11-01T00:00:00Z"), 2)
+        // Luna nueva el 9-nov a las 07:02 UTC y llena el 24-nov a las 14:53 UTC.
+        assertFalse(p[0].full); assertTrue(Math.abs(p[0].at.epochSecond - Instant.parse("2026-11-09T07:02:00Z").epochSecond) < 300)
+        assertTrue(p[1].full); assertTrue(Math.abs(p[1].at.epochSecond - Instant.parse("2026-11-24T14:53:00Z").epochSecond) < 300)
+    }
+
+    @Test fun winterSolsticeAndShowers() {
+        val ev = Astro.events(Instant.parse("2026-11-01T00:00:00Z"), 40.43, -3.61, madrid)
+        val sol = ev.first { it.label == "Solsticio de invierno" }
+        assertTrue(Math.abs(sol.at.epochSecond - Instant.parse("2026-12-21T20:50:00Z").epochSecond) < 600)
+        assertTrue(ev.any { it.label == "Lluvia de Gemínidas" })
+        assertTrue(ev.any { it.label == "Atardecer más temprano" })
+        assertTrue(ev.zipWithNext().all { (a, b) -> !a.at.isAfter(b.at) })
     }
 }

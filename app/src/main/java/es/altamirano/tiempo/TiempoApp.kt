@@ -24,14 +24,14 @@ class TiempoApp : Application() {
     lateinit var snapshots: WidgetSnapshots; private set
 
     /** Municipios y nomenclátor: ~40.000 líneas, se cargan una vez y en segundo plano. */
-    val places: Places by lazy { assets.open("Municipios.tsv").use { m -> assets.open("Nucleos.tsv").use { n -> Places(m, n) } } }
+    val places: Places by lazy { assets.open("Municipios.tsv").use { m -> assets.open("Nucleos.tsv").use { n -> assets.open("Recintos.bin").use { r -> assets.open("Distritos.tsv").use { d -> Places(m, n, r, d) } } } } }
 
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
         locations = LocationStore(this) { places }
         snapshots = WidgetSnapshots(this)
-        weather = WeatherRepo(this, scope, settings) { weather.aemet.stations() }
+        weather = WeatherRepo(this, scope, settings, { weather.aemet.stations() }) { locations.update(it) }
         tides = Tides(DiskCache(File(cacheDir, "mareas")))
         scope.launch(Dispatchers.Default) { places }   // precarga
         es.altamirano.tiempo.widget.RefreshWorker.schedule(this)

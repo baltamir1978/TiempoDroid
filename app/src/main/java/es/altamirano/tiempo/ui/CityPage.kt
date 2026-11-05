@@ -1,6 +1,20 @@
 package es.altamirano.tiempo.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import es.altamirano.tiempo.app
+import es.altamirano.tiempo.core.ObsRecord
+import es.altamirano.tiempo.data.WeatherRepo
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -169,16 +183,78 @@ private fun HeroStat(emoji: String, value: String, label: String) {
     }
 }
 
-/** El sitio y la estación de observación que se usa, con su distancia. */
+/**
+ * El sitio y la estación de observación que se usa, con su distancia. Al tocarla, el selector
+ * (`StationPickerSheet`): la más cercana no siempre es la que representa tu sitio.
+ */
 @Composable
 private fun PlaceCard(loc: SavedLocation) {
-    Card {
-        Column(Modifier.padding(16.dp, 12.dp)) {
-            Text((if (loc.isCurrent) "📍 " else "") + loc.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            val sub = listOfNotNull(loc.province?.takeIf { it != loc.name }, loc.stationName?.let { s ->
-                "Estación: $s" + (loc.stationKm?.let { " · ${it.roundToInt()} km" } ?: "") }).joinToString(" · ")
-            if (sub.isNotEmpty()) Text(sub, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    var picking by remember { mutableStateOf(false) }
+    Box(Modifier.clickable { picking = true }) {
+        Card {
+            Row(Modifier.padding(16.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text((if (loc.isCurrent) "📍 " else "") + loc.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    val sub = listOfNotNull(loc.province?.takeIf { it != loc.name }, loc.stationName?.let { s ->
+                        "Estación $s" + (loc.stationKm?.let { " · a ${km(it)} km" } ?: "") }).joinToString(" · ")
+                    if (sub.isNotEmpty()) Text(sub, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text("›", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
+    }
+    if (picking) StationPicker(loc) { picking = false }
+}
+
+fun km(v: Double): String = if (v < 10) String.format(Locale.getDefault(), "%.1f", v) else v.roundToInt().toString()
+
+@Composable
+private fun StationPicker(loc: SavedLocation, onDismiss: () -> Unit) {
+    val app = LocalContext.current.app
+    val scope = rememberCoroutineScope()
+    val configured = app.weather.aemet.configured
+    var nearby by remember { mutableStateOf<List<Pair<ObsRecord, Double>>?>(null) }
+    LaunchedEffect(loc.lat, loc.lon) { nearby = if (configured) app.weather.nearbyStations(loc.lat, loc.lon) else emptyList() }
+    fun pick(st: ObsRecord?, km: Double?) {
+        val updated = if (st == null) loc.copy(idema = null, stationName = null, stationKm = null, stationPinned = false)
+            else WeatherRepo.withStation(loc, st, km ?: 0.0, pinned = true)
+        app.locations.update(updated)
+        scope.launch { app.snapshots.save(updated, app.weather.load(updated, force = true)) }
+        onDismiss()
+    }
+    AlertDialog(onDismissRequest = onDismiss, confirmButton = { TextButton(onClick = onDismiss) { Text("Listo") } },
+        title = { Text("Estación") },
+        text = {
+            when {
+                !configured -> Text("Sin clave de AEMET el tiempo sale de Open-Meteo, que no tiene estaciones: modela tu punto exacto. Pon la clave en Ajustes para elegir estación.")
+                nearby == null -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Green) }
+                nearby!!.isEmpty() -> Text("No se pudo cargar la red de estaciones de AEMET (¿clave caducada?).")
+                else -> LazyColumn {
+                    item {
+                        StationRow("Automática", "La más cercana" + (nearby!!.first().first.ubi?.let { ": " + WeatherRepo.stationName(it) } ?: ""),
+                            !loc.stationPinned) { pick(null, null) }
+                        Text("Si la más cercana está al otro lado de la montaña, elige la que comparta tu valle o tu altitud.",
+                            Modifier.padding(vertical = 6.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                    items(nearby!!) { (st, d) ->
+                        StationRow(WeatherRepo.stationName(st.ubi ?: st.idema ?: ""),
+                            "a ${km(d)} km" + (st.alt?.let { " · ${it.roundToInt()} m" } ?: ""),
+                            loc.stationPinned && loc.idema == st.idema) { pick(st, d) }
+                    }
+                }
+            }
+        })
+}
+
+@Composable
+private fun StationRow(title: String, detail: String, selected: Boolean, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp)
+            Text(detail, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (selected) Text("✓", color = Green, fontWeight = FontWeight.Bold, fontSize = 18.sp)
     }
 }
 
