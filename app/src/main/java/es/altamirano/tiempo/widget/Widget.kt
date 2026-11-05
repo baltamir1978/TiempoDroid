@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
@@ -68,6 +69,7 @@ import es.altamirano.tiempo.app
 import es.altamirano.tiempo.core.TempPalette
 import es.altamirano.tiempo.core.freshObsTemp
 import es.altamirano.tiempo.core.latestTemp
+import es.altamirano.tiempo.core.latest
 import es.altamirano.tiempo.core.nextHours
 import es.altamirano.tiempo.core.skyNow
 import es.altamirano.tiempo.core.upcomingDays
@@ -86,11 +88,18 @@ import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
+/** Una hora de la tira del widget (`AemetHourPoint`). */
+@Serializable data class HourPoint(val hour: Int, val temp: Int, val sky: String? = null, val prob: Int? = null)
+
+/** Un día de las filas del widget grande (`AemetDayPoint`). */
+@Serializable data class DayPoint(val date: String, val min: Int? = null, val max: Int? = null, val sky: String? = null, val prob: Int? = null)
+
 /** Lo que enseña el widget de una ubicación (como `AemetSnapshot` en el App Group de iOS). */
 @Serializable
 data class Snapshot(
     val name: String, val temp: Int?, val max: Int?, val min: Int?, val sky: String?, val skyText: String?,
-    val hours: List<Triple<Int, String?, Int>> = emptyList(), val alertLevel: Int = 0, val alert: String? = null, val at: Long = 0,
+    val hourly: List<HourPoint> = emptyList(), val alertLevel: Int = 0, val alert: String? = null, val at: Long = 0,
+    val humidity: Int? = null, val windKmh: Int? = null, val daily: List<DayPoint> = emptyList(),
 )
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -101,16 +110,25 @@ class WidgetSnapshots(private val context: Context) {
 
     fun get(key: String): Snapshot? = prefs.getString(key, null)?.let { runCatching { json.decodeFromString<Snapshot>(it) }.getOrNull() }
 
+    /** Con la misma cadena que la tarjeta verde de la app, para que los dos digan lo mismo. */
     fun save(loc: SavedLocation, w: CityWeather) {
         val now = LocalDateTime.now(loc.zone)
-        val today = w.daily.upcomingDays(now.toLocalDate()).firstOrNull()
+        val days = w.daily.upcomingDays(now.toLocalDate())
+        val today = days.firstOrNull()
         val hours = w.hourly.nextHours(now)
-        val sky = w.hourly.skyNow(now.hour)
-        val temp = freshObsTemp(w.obs.latestTemp()) ?: hours.firstOrNull()?.temp ?: w.obs.latestTemp()?.ta
+        val sky = w.hourly.skyNow(now.hour) ?: today?.estadoCielo?.let { es.altamirano.tiempo.core.pickPeriod(it) }
+        val temp = freshObsTemp(w.obs.latestTemp()) ?: hours.firstOrNull()?.temp ?: w.obs.latestTemp()?.ta ?: today?.temperatura?.maxima
         val top = w.alerts.maxByOrNull { it.level }
         val s = Snapshot(loc.name, temp?.roundToInt(), today?.temperatura?.maxima?.roundToInt(), today?.temperatura?.minima?.roundToInt(),
-            sky?.value, sky?.descripcion, hours.drop(1).take(5).map { Triple(it.hour, it.sky, it.temp.roundToInt()) },
-            top?.level?.ordinal ?: 0, top?.phenomenon, System.currentTimeMillis())
+            sky?.value, sky?.descripcion,
+            hours.drop(1).take(6).map { HourPoint(it.hour, it.temp.roundToInt(), it.sky, it.prob) },
+            top?.level?.ordinal ?: 0, top?.phenomenon, System.currentTimeMillis(),
+            humidity = w.obs.latest { it.hr }?.roundToInt(), windKmh = w.obs.latest { it.vv }?.let { (it * 3.6).roundToInt() },
+            daily = days.take(5).map { d ->
+                DayPoint(d.fecha?.take(10) ?: "", d.temperatura?.minima?.roundToInt(), d.temperatura?.maxima?.roundToInt(),
+                    es.altamirano.tiempo.core.pickPeriod(d.estadoCielo)?.value,
+                    (es.altamirano.tiempo.core.pickPeriod(d.probPrecipitacion)?.value ?: es.altamirano.tiempo.core.maxOfDay(d.probPrecipitacion)?.value)?.toIntOrNull())
+            })
         prefs.edit().putString(LocationStore.keyOf(loc), json.encodeToString(Snapshot.serializer(), s)).apply()
         requestUpdate()
     }
@@ -125,8 +143,29 @@ class WidgetSnapshots(private val context: Context) {
     }
 }
 
+/** La barra del día en la escala de la semana (las filas del widget grande): mín ——— máx. */
+private fun dayBar(context: Context, lo: Double, hi: Double, wMin: Double, wMax: Double, track: Int, widthDp: Int): android.graphics.Bitmap {
+    val d = context.resources.displayMetrics.density
+    val w = (widthDp * d).roundToInt().coerceAtLeast(4); val h = (6 * d).roundToInt()
+    val b = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(b)
+    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = track }
+    c.drawRoundRect(0f, 0f, w.toFloat(), h.toFloat(), h / 2f, h / 2f, p)
+    val span = (wMax - wMin).coerceAtLeast(1.0)
+    val x0 = ((lo - wMin) / span * w).toFloat(); val x1 = ((hi - wMin) / span * w).toFloat().coerceAtLeast(x0 + h)
+    p.shader = android.graphics.LinearGradient(x0, 0f, x1, 0f, 0xFF7FC8FF.toInt(), 0xFFFFB347.toInt(), android.graphics.Shader.TileMode.CLAMP)
+    c.drawRoundRect(x0, 0f, x1, h.toFloat(), h / 2f, h / 2f, p)
+    return b
+}
+
+/**
+ * El widget de Tiempo en tres tamaños, como en iOS: pequeño (2×2), mediano (4×2) y grande (4×4).
+ * El mediano: el sitio con su aviso arriba, la temperatura y el cielo a la izquierda, máxima,
+ * mínima, humedad y viento a la derecha, y cinco horas abajo. El grande añade seis horas y los
+ * cinco días con su barra en la escala de la semana.
+ */
 class WeatherWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(setOf(DpSize(110.dp, 110.dp), DpSize(250.dp, 110.dp)))
+    override val sizeMode = SizeMode.Responsive(setOf(DpSize(110.dp, 110.dp), DpSize(250.dp, 110.dp), DpSize(250.dp, 250.dp)))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.app
@@ -135,35 +174,116 @@ class WeatherWidget : GlanceAppWidget() {
         val snap = app.snapshots.get(key)
         val tempBg = app.settings.widgetTempBackground(widgetId)
         val scale = app.settings.tempScale.value
-        provideContent { Content(snap, tempBg, scale) }
+        provideContent { Content(context, snap, tempBg, scale) }
     }
 
     @androidx.compose.runtime.Composable
-    private fun Content(s: Snapshot?, tempBg: Boolean, scale: es.altamirano.tiempo.core.TempScale) {
-        val wide = LocalSize.current.width >= 250.dp
+    private fun Content(context: Context, s: Snapshot?, tempBg: Boolean, scale: es.altamirano.tiempo.core.TempScale) {
+        val size = LocalSize.current
+        val large = size.width >= 250.dp && size.height >= 250.dp
+        val medium = !large && size.width >= 250.dp
         val temp = s?.temp?.toDouble()
         val (top, bottom) = if (tempBg && temp != null) TempPalette.gradient(temp, scale) else (0x37D094 to 0x0B6F53)
         val dark = tempBg && temp != null && TempPalette.prefersDarkInk(temp, scale)
-        val ink = ColorProvider(if (dark) Color(0xFF0B2236) else Color.White)
-        val soft = ColorProvider(if (dark) Color(0xCC0B2236) else Color(0xCCFFFFFF))
+        val inkColor = if (dark) Color(0xFF0B2236) else Color.White
+        val ink = ColorProvider(inkColor)
+        val soft = ColorProvider(inkColor.copy(alpha = 0.8f))
+        val rain = ColorProvider(if (dark) Color(0xFF1F66D1) else Color(0xFFBFE6FF))
+        val alertColor = when (s?.alertLevel) { 3 -> Color(0xFFD92E2E); 2 -> Color(0xFFF28C1A); else -> Color(0xFFF2CC1A) }
+        val now = java.time.LocalDate.now()
+
+        @androidx.compose.runtime.Composable fun alertPill(full: Boolean) {
+            val a = s?.alert ?: return
+            Box(GlanceModifier.then(if (full) GlanceModifier.fillMaxWidth() else GlanceModifier).cornerRadius(10.dp)
+                .background(ColorProvider(alertColor)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Text(if (full) "⚠ $a" else "⚠", maxLines = 1, style = TextStyle(color = ColorProvider(Color.White), fontSize = 11.sp, fontWeight = FontWeight.Bold))
+            }
+        }
+        @androidx.compose.runtime.Composable fun hourStrip(n: Int) {
+            Row(GlanceModifier.fillMaxWidth()) {
+                s!!.hourly.take(n).forEach { h ->
+                    Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("%02d".format(h.hour), style = TextStyle(color = soft, fontSize = 11.sp))
+                        Text(skyEmoji(h.sky), style = TextStyle(fontSize = 16.sp))
+                        Text("${h.temp}°", style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold))
+                        Text(h.prob?.takeIf { it > 0 }?.let { "$it%" } ?: " ", style = TextStyle(color = rain, fontSize = 10.sp))
+                    }
+                }
+            }
+        }
+        @androidx.compose.runtime.Composable fun details(big: Boolean) {
+            Column(horizontalAlignment = Alignment.End) {
+                Text("↑${s!!.max ?: "—"}°  ↓${s.min ?: "—"}°", style = TextStyle(color = ink, fontSize = if (big) 17.sp else 14.sp, fontWeight = FontWeight.Medium))
+                s.humidity?.let { Text("💧 $it%", style = TextStyle(color = soft, fontSize = 12.sp)) }
+                s.windKmh?.let { Text("💨 $it km/h", style = TextStyle(color = soft, fontSize = 12.sp)) }
+            }
+        }
+        @androidx.compose.runtime.Composable fun current(tempSp: Int) {
+            Column(GlanceModifier) {
+                Row(GlanceModifier, verticalAlignment = Alignment.Top) {
+                    Text("${s!!.temp ?: "—"}°", style = TextStyle(color = ink, fontSize = tempSp.sp))
+                    Text(" " + skyEmoji(s.sky), style = TextStyle(fontSize = (tempSp / 2).sp))
+                }
+                Text(s!!.skyText ?: "", maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
+            }
+        }
+
         WidgetFrame(top, bottom, "aemet") {
             if (s == null) { Text("Abre la app para cargar el tiempo", GlanceModifier.padding(12.dp), style = TextStyle(color = ink, fontSize = 12.sp)); return@WidgetFrame }
-            Row(GlanceModifier.fillMaxSize().padding(12.dp)) {
-                Column(GlanceModifier.defaultWeight()) {
-                    Text(s.name, maxLines = 1, style = TextStyle(color = ink, fontWeight = FontWeight.Bold, fontSize = 13.sp))
-                    Text("${s.temp ?: "—"}°", style = TextStyle(color = ink, fontSize = 38.sp))
-                    Text(skyEmoji(s.sky) + " " + (s.skyText ?: ""), maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
-                    Text("↑${s.max ?: "—"}°  ↓${s.min ?: "—"}°", style = TextStyle(color = soft, fontSize = 12.sp))
-                    if (s.alert != null) Text("⚠ ${s.alert}", maxLines = 1, style = TextStyle(color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold))
-                }
-                if (wide) Row(GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-                    s.hours.forEach { (h, sky, t) ->
-                        Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("%02d".format(h), style = TextStyle(color = soft, fontSize = 11.sp))
-                            Text(skyEmoji(sky), style = TextStyle(fontSize = 16.sp))
-                            Text("$t°", style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold))
+            when {
+                large -> Column(GlanceModifier.fillMaxSize().padding(16.dp)) {
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Column(GlanceModifier.defaultWeight()) {
+                            Text(s.name, maxLines = 1, style = TextStyle(color = ink, fontWeight = FontWeight.Bold, fontSize = 14.sp))
+                            current(46)
+                        }
+                        details(true)
+                    }
+                    if (s.alert != null) { Spacer(GlanceModifier.height(6.dp)); alertPill(true) }
+                    Spacer(GlanceModifier.height(8.dp))
+                    hourStrip(6)
+                    if (s.daily.isNotEmpty()) {
+                        Spacer(GlanceModifier.height(6.dp))
+                        val wMin = (s.daily.mapNotNull { it.min }.minOrNull() ?: 0).toDouble()
+                        val wMax = (s.daily.mapNotNull { it.max }.maxOrNull() ?: 1).toDouble()
+                        val track = android.graphics.Color.argb(56, (inkColor.red * 255).toInt(), (inkColor.green * 255).toInt(), (inkColor.blue * 255).toInt())
+                        s.daily.forEach { d ->
+                            val date = runCatching { java.time.LocalDate.parse(d.date) }.getOrNull()
+                            val label = if (date == now) "Hoy" else date?.format(java.time.format.DateTimeFormatter.ofPattern("EEE", es.altamirano.tiempo.core.I18n.locale()))?.replaceFirstChar { it.titlecase() } ?: ""
+                            Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(label, GlanceModifier.width(44.dp), maxLines = 1, style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+                                Text(skyEmoji(d.sky), GlanceModifier.width(26.dp), style = TextStyle(fontSize = 15.sp))
+                                Text(d.prob?.takeIf { it > 0 }?.let { "$it%" } ?: "", GlanceModifier.width(36.dp), style = TextStyle(color = rain, fontSize = 11.sp))
+                                Text("${d.min ?: "—"}°", GlanceModifier.width(30.dp), style = TextStyle(color = soft, fontSize = 13.sp))
+                                if (d.min != null && d.max != null) Image(ImageProvider(dayBar(context, d.min.toDouble(), d.max.toDouble(), wMin, wMax, track, 90)), null,
+                                    GlanceModifier.defaultWeight().height(6.dp), contentScale = androidx.glance.layout.ContentScale.FillBounds)
+                                else Spacer(GlanceModifier.defaultWeight())
+                                Text(" ${d.max ?: "—"}°", style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold))
+                            }
                         }
                     }
+                }
+                medium -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.name, maxLines = 1, style = TextStyle(color = ink, fontWeight = FontWeight.Bold, fontSize = 14.sp))
+                        if (s.alert != null) { Spacer(GlanceModifier.width(6.dp)); Box(GlanceModifier.defaultWeight()) { alertPill(true) } }
+                    }
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Box(GlanceModifier.defaultWeight()) { current(36) }
+                        details(false)
+                    }
+                    Spacer(GlanceModifier.defaultWeight())
+                    hourStrip(5)
+                }
+                else -> Column(GlanceModifier.fillMaxSize().padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.name, maxLines = 1, style = TextStyle(color = soft, fontWeight = FontWeight.Bold, fontSize = 12.sp), modifier = GlanceModifier.defaultWeight())
+                        alertPill(false)
+                    }
+                    current(40)
+                    Spacer(GlanceModifier.defaultWeight())
+                    Text("↑${s.max ?: "—"}°  ↓${s.min ?: "—"}°", style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+                    Text(listOfNotNull(s.humidity?.let { "💧$it%" }, s.windKmh?.let { "💨$it" }).joinToString("  "), style = TextStyle(color = soft, fontSize = 11.sp))
                 }
             }
         }

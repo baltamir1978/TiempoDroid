@@ -7,7 +7,7 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3: compila y pasan 30 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.apk`.
+**0.3.1: compila y pasan 30 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.1.apk`.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
@@ -47,7 +47,9 @@ Hecho, traducido de la app de iOS:
   fases, **selector de fecha** (0.3), calendario lunar con eventos astronómicos (`core/Astro.kt`).
   **Mareas del IHM** con la conversión UTC → hora del puerto; el puerto elegido guardado (Llanes
   por omisión).
-- **Cuatro widgets** (Tiempo, Netatmo, Sol·Luna, Mareas), cada uno con su configuración (ciudad,
+- **Cuatro widgets** (Tiempo, Netatmo, Sol·Luna, Mareas). El de Tiempo, en los tres tamaños de
+  iOS (0.3.1): 2×2; 4×2 (por omisión al ponerlo) con sitio y aviso, temperatura, máx/mín, humedad,
+  viento y cinco horas con su lluvia; 4×4 con seis horas y cinco días con barra de la semana. Todos cada uno con su configuración (ciudad,
   fondo o puerto) y abriendo su pestaña (`tiempo://aemet|netatmo|cosmos|tides`). Fondo según la
   temperatura con **las seis escalas de iOS copiadas exactas** (`core/TempScale.kt`), ahora con el
   degradado de verdad (mapa de bits estirado). Mareas: la playa con el agua a la altura de la marea.
