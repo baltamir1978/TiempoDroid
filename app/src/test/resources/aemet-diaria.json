@@ -1,0 +1,15 @@
+[ {
+  "origen" : { "productor" : "Agencia Estatal de Meteorología - AEMET. Gobierno de España" },
+  "elaborado" : "2026-11-05T09:00:00", "nombre" : "Segovia", "provincia" : "Segovia",
+  "prediccion" : { "dia" : [ {
+      "probPrecipitacion" : [ { "value" : 0, "periodo" : "00-24" }, { "value" : 5, "periodo" : "12-24" } ],
+      "cotaNieveProv" : [ { "value" : "", "periodo" : "00-24" } ],
+      "estadoCielo" : [ { "value" : "", "periodo" : "00-24", "descripcion" : "" }, { "value" : "12", "periodo" : "12-24", "descripcion" : "Poco nuboso" } ],
+      "viento" : [ { "direccion" : "N", "velocidad" : 10, "periodo" : "00-24" } ],
+      "rachaMax" : [ { "value" : "", "periodo" : "00-24" }, { "value" : "35", "periodo" : "12-24" } ],
+      "temperatura" : { "maxima" : 14, "minima" : 3 },
+      "sensTermica" : { "maxima" : 13, "minima" : 1 },
+      "humedadRelativa" : { "maxima" : 90, "minima" : 45 },
+      "uvMax" : 3, "fecha" : "2026-11-05T00:00:00" }, {
+      "estadoCielo" : [ { "value" : "24", "periodo" : "00-24", "descripcion" : "Nuboso con lluvia" } ],
+      "temperatura" : { "maxima" : 11, "minima" : 5 }, "fecha" : "2026-11-06T00:00:00" } ] } } ]

@@ -5,10 +5,40 @@ Compose**. En el móvil se llamará **Tiempo ES**, como en el iPhone. Lo común 
 (firma, `versionCode`, secretos, distribución, código compartido) está en el `CLAUDE.md` de la
 carpeta de proyectos; aquí va lo propio de esta.
 
-## Estado (21-oct-2026)
+## Estado (5-nov-2026)
 
-**Sin empezar.** Es la más grande de las de Android (unas 11.000 líneas en iOS). Se puede hacer casi
-entera en el emulador.
+**0.1: compila y pasan 18 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.1.apk`.
+
+Hecho, traducido de la app de iOS:
+- **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
+  su caché; tarjetas como `AemetCityView`: avisos, la grande en degradado verde (temperatura de
+  la estación si es de hace ≤ 2 h, si no la de esta hora), 48 horas, curva de temperatura, 7 días,
+  detalles de hoy, estación, aire·polen·UV (Open-Meteo) y fuente.
+- **AEMET** en dos pasos, peticiones espaciadas 1,2 s, reintento si 429 y caché en disco a la
+  que se vuelve si falla. **Si AEMET no da nada (sin clave, caducada o caída), Open-Meteo**
+  adaptado a las mismas estructuras, como en iOS sin clave.
+- **Avisos CAP**: el `.tar` de la comunidad, punto en polígono, el nivel más alto por fenómeno,
+  sin los ya caducados.
+- **Ubicación sin geocodificador** (no hay sin Google Play): `LocationManager`, el municipio de
+  AEMET más cercano (`assets/Municipios.tsv`, sacado del maestro de AEMET el 5-nov-2026) y el
+  núcleo del nomenclátor (`assets/Nucleos.tsv`, el de iOS). **Buscador instantáneo** sin red.
+- **Sol·Luna**: traducción línea a línea de `SunMoonService` (NOAA); fase, iluminación, próximas
+  fases. **Mareas del IHM** con la conversión UTC → hora del puerto y reagrupado por día local;
+  el puerto más cercano (sin Lisboa) y los dos siguientes.
+- **Widget de Tiempo** (pequeño y mediano) con ciudad y fondo por widget, y el **color según la
+  temperatura con las seis escalas de iOS copiadas exactas** (`core/TempScale.kt`, con su
+  degradado en OKLab y la tinta azul marino `#0B2236`); avisos a los widgets agrupados (3 s);
+  refresco cada 3 h con WorkManager.
+- Arreglado respecto a iOS: la probabilidad de lluvia de la franja «2002» (20 a 02 h, cruza la
+  medianoche) no salía nunca; aquí sí.
+
+Falta: **Netatmo** (pestaña Actual, gráficas y su widget), **Portugal con el IPMA**, eventos
+astronómicos y calendario lunar, widgets Sol·Luna y Mareas, selector de estación AEMET,
+traducciones (en, gl, eu, ca: ahora sólo español) y probar en el móvil.
+
+**La clave de AEMET de Bruno caducó** (había que renovarla antes del 15-oct-2026): AEMET contesta
+401 a todo. Mientras no la renueve en opendata.aemet.es, la app tira de Open-Meteo. Va en
+`local.properties` (`aemet.apiKey`), nunca en el repo, o en Ajustes dentro de la app.
 
 ## La especificación es el original
 
@@ -44,6 +74,13 @@ entera en el emulador.
 
 **Datos que se reutilizan tal cual:** `Nucleos.tsv` y su generador `Tools/build_nomenclator.py`, y
 las tablas de las escalas de color (`AppPersonalWidget/WidgetTheme.swift`).
+
+## Netatmo va a limitar las consultas (correo del 5-nov-2026)
+
+Desde el 1-mar-2027, límites más bajos para quien consulta periódicamente; Netatmo empuja a los
+webhooks, que necesitan un servidor con HTTPS público (el móvil no puede recibirlos). Cuando se
+haga la pestaña Actual: pedir la estación como mucho cada 10 min (es lo que tarda en medir) y
+compartir la sesión con CalefaccionDroid. Ver el `CLAUDE.md` de CalefaccionDroid.
 
 ## Trampas que vienen del original
 

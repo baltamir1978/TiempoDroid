@@ -1,0 +1,238 @@
+package es.altamirano.tiempo.data
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
+import android.os.CancellationSignal
+import es.altamirano.tiempo.BuildConfig
+import es.altamirano.tiempo.core.AemetAlert
+import es.altamirano.tiempo.core.AirData
+import es.altamirano.tiempo.core.DailyRoot
+import es.altamirano.tiempo.core.HourlyRoot
+import es.altamirano.tiempo.core.ObsRecord
+import es.altamirano.tiempo.core.Places
+import es.altamirano.tiempo.core.TempScale
+import es.altamirano.tiempo.core.timeZoneFor
+import es.altamirano.tiempo.net.Aemet
+import es.altamirano.tiempo.net.DiskCache
+import es.altamirano.tiempo.net.OpenMeteo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
+import java.io.File
+import java.time.ZoneId
+import kotlin.coroutines.resume
+
+private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+/** Un sitio que se sigue: código de municipio de AEMET, nombre y coordenadas (`SavedLocation`). */
+@Serializable
+data class SavedLocation(
+    val code: String,
+    val name: String,
+    val province: String? = null,
+    val lat: Double,
+    val lon: Double,
+    val idema: String? = null,
+    val stationName: String? = null,
+    val stationKm: Double? = null,
+    /** El municipio de AEMET de la ubicación del GPS (su `code` es el centinela). */
+    val ine: String? = null,
+) {
+    /** El código con el que pedir la previsión. */
+    val municipio: String get() = if (isCurrent) ine ?: "" else code
+    val zone: ZoneId get() = timeZoneFor(municipio, lat, lon)
+    val isCurrent get() = code == CURRENT
+
+    companion object {
+        const val CURRENT = "__current__"
+        /** Las de partida, como en iOS. */
+        val DEFAULTS = listOf(
+            SavedLocation("40181", "La Granja", "Segovia", 40.9000, -4.0167, "2465"),
+            SavedLocation("28079", "Madrid", "Madrid", 40.4168, -3.7038, "3126Y"),
+            SavedLocation("33036", "Posada de Llanes", "Asturias", 43.4214, -4.7546, "1183X"),
+        )
+    }
+}
+
+class Settings(context: Context) {
+    private val prefs = context.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
+    private val _key = MutableStateFlow(prefs.getString("aemet", null) ?: BuildConfig.AEMET_API_KEY)
+    val aemetKey: StateFlow<String> = _key.asStateFlow()
+    private val _scale = MutableStateFlow(runCatching { TempScale.valueOf(prefs.getString("escala", "")!!) }.getOrDefault(TempScale.DEFAULT))
+    val tempScale: StateFlow<TempScale> = _scale.asStateFlow()
+
+    fun setAemetKey(k: String) { _key.value = k.trim(); prefs.edit().putString("aemet", k.trim()).apply() }
+    fun setScale(s: TempScale) { _scale.value = s; prefs.edit().putString("escala", s.name).apply() }
+
+    /** Ciudad y fondo de cada widget («Editar widget» en iOS). */
+    fun widgetCity(id: Int): String? = prefs.getString("widget-$id", null)
+    fun widgetTempBackground(id: Int): Boolean = prefs.getBoolean("widget-$id-temp", true)
+    fun setWidget(id: Int, code: String, tempBackground: Boolean) =
+        prefs.edit().putString("widget-$id", code).putBoolean("widget-$id-temp", tempBackground).apply()
+
+    fun stationOverride(code: String): String? = prefs.getString("estacion-$code", null)
+}
+
+/**
+ * Las ubicaciones: la del GPS («Ubicación actual») y las que sigues. La del GPS se resuelve sin
+ * red: municipio de AEMET más cercano, y dentro de él el núcleo del nomenclátor (el pueblo, no
+ * el municipio: en todo el concejo de Llanes, Apple decía «Llanes»).
+ */
+class LocationStore(private val context: Context, private val places: () -> Places) {
+    private val file = File(context.filesDir, "ubicaciones.json")
+    private val prefs = context.getSharedPreferences("ubicaciones", Context.MODE_PRIVATE)
+
+    private val _saved = MutableStateFlow(runCatching { json.decodeFromString(ListSerializer(SavedLocation.serializer()), file.readText()) }
+        .getOrDefault(SavedLocation.DEFAULTS))
+    val saved: StateFlow<List<SavedLocation>> = _saved.asStateFlow()
+    private val _current = MutableStateFlow(prefs.getString("actual", null)?.let { runCatching { json.decodeFromString(SavedLocation.serializer(), it) }.getOrNull() })
+    val current: StateFlow<SavedLocation?> = _current.asStateFlow()
+
+    private fun persist() {
+        val tmp = File(file.parentFile, file.name + ".tmp")
+        tmp.writeText(json.encodeToString(ListSerializer(SavedLocation.serializer()), _saved.value)); tmp.renameTo(file)
+    }
+
+    fun add(loc: SavedLocation) { if (_saved.value.none { it.code == loc.code && it.name == loc.name }) { _saved.update { it + loc }; persist() } }
+    fun remove(loc: SavedLocation) { _saved.update { l -> l.filterNot { it.code == loc.code && it.name == loc.name } }; persist() }
+    fun move(from: Int, to: Int) { _saved.update { l -> l.toMutableList().apply { add(to, removeAt(from)) } }; persist() }
+    fun update(loc: SavedLocation) {
+        if (loc.isCurrent) { _current.value = loc; prefs.edit().putString("actual", json.encodeToString(SavedLocation.serializer(), loc)).apply() }
+        else { _saved.update { l -> l.map { if (it.code == loc.code && it.name == loc.name) loc else it } }; persist() }
+    }
+
+    fun all(): List<SavedLocation> = listOfNotNull(_current.value) + _saved.value
+    fun byKey(key: String): SavedLocation? = all().firstOrNull { keyOf(it) == key }
+
+    fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Dónde estás, con `LocationManager` y no con el de Google Play (GrapheneOS): primero lo
+     * último conocido si es reciente, si no un fix nuevo (red o GPS), con 20 s de margen.
+     */
+    @SuppressLint("MissingPermission")
+    suspend fun locate(): SavedLocation? {
+        if (!hasPermission()) return null
+        val lm = context.getSystemService(LocationManager::class.java)
+        val providers = listOf(LocationManager.FUSED_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
+            .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
+        val recent = providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
+            .filter { System.currentTimeMillis() - it.time < 10 * 60_000 }.maxByOrNull { it.time }
+        val fix = recent ?: withTimeoutOrNull(20_000) {
+            suspendCancellableCoroutine<Location?> { cont ->
+                val provider = providers.firstOrNull() ?: run { cont.resume(null); return@suspendCancellableCoroutine }
+                val cancel = CancellationSignal()
+                cont.invokeOnCancellation { cancel.cancel() }
+                lm.getCurrentLocation(provider, cancel, context.mainExecutor) { cont.resume(it) }
+            }
+        } ?: providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time } ?: return null
+        val loc = withContext(Dispatchers.Default) { resolve(fix.latitude, fix.longitude) } ?: return null
+        update(loc)
+        return loc
+    }
+
+    /** Municipio y núcleo más cercanos al punto. */
+    fun resolve(lat: Double, lon: Double): SavedLocation? {
+        val p = places()
+        val m = p.nearestMunicipio(lat, lon) ?: return null
+        val name = p.nearestNucleo(lat, lon, m.code)?.name ?: m.name
+        // Si sigues en el mismo municipio, se conserva la estación que ya tenía.
+        val keep = _current.value?.takeIf { it.ine == m.code }
+        return SavedLocation(SavedLocation.CURRENT, name, m.name, lat, lon, keep?.idema, keep?.stationName, keep?.stationKm, m.code)
+    }
+
+    companion object {
+        fun keyOf(l: SavedLocation) = if (l.isCurrent) SavedLocation.CURRENT else "${l.code}|${l.name}"
+    }
+}
+
+/** Todo lo que enseña la página de una ubicación (`CityWeather`). */
+data class CityWeather(
+    val daily: DailyRoot? = null,
+    val hourly: HourlyRoot? = null,
+    val obs: List<ObsRecord>? = null,
+    val air: AirData? = null,
+    val alerts: List<AemetAlert> = emptyList(),
+    val source: String? = null,
+    val loadedAt: Long? = null,
+    val loading: Boolean = false,
+    val error: String? = null,
+) {
+    val hasData get() = daily != null || hourly != null || obs != null
+}
+
+/**
+ * El tiempo de cada ubicación, cada una con su copia: una ciudad ya visitada sale al instante y
+ * nunca se ve el tiempo de la anterior bajo el nombre de la nueva. Con AEMET, si falla, Open-Meteo.
+ */
+class WeatherRepo(context: Context, private val scope: CoroutineScope, settings: Settings, private val stations: suspend () -> List<ObsRecord>) {
+    val cache = DiskCache(File(context.cacheDir, "aemet"))
+    val aemet = Aemet(cache) { settings.aemetKey.value }
+    private val _pages = MutableStateFlow<Map<String, CityWeather>>(emptyMap())
+    val pages: StateFlow<Map<String, CityWeather>> = _pages.asStateFlow()
+
+    /** Lo que hay en disco, sin red: para pintar en cuanto aparece la página. */
+    fun primed(loc: SavedLocation): CityWeather {
+        _pages.value[LocationStore.keyOf(loc)]?.let { return it }
+        val code = loc.municipio
+        val d = aemet.cachedDaily(code); val h = aemet.cachedHourly(code)
+        val o = loc.idema?.let { aemet.cachedObservation(it) }
+        val oldest = listOfNotNull(d?.second, h?.second).maxOrNull()
+        return CityWeather(d?.first, h?.first, o?.first, source = d?.first?.origen?.productor,
+            loadedAt = oldest?.let { System.currentTimeMillis() - it * 1000 })
+    }
+
+    /** `force`: sin mirar la edad de la caché (el botón de actualizar). */
+    suspend fun load(loc: SavedLocation, force: Boolean = false): CityWeather {
+        val key = LocationStore.keyOf(loc)
+        _pages.update { it + (key to primed(loc).copy(loading = true, error = null)) }
+        val maxAge = if (force) null else 30 * 60L
+        val code = loc.municipio
+        var result = CityWeather()
+        val airJob = scope.async { OpenMeteo.air(loc.lat, loc.lon) }
+        if (aemet.configured && code.isNotEmpty()) {
+            try {
+                val d = scope.async { runCatching { aemet.daily(code, maxAge) }.getOrNull() }
+                val h = scope.async { runCatching { aemet.hourly(code, maxAge) }.getOrNull() }
+                val idema = loc.idema ?: nearestStation(loc)
+                val o = idema?.let { runCatching { aemet.observation(it, if (force) null else 10 * 60L) }.getOrNull() }
+                val a = runCatching { aemet.alerts(code, loc.lat, loc.lon, if (force) null else 30 * 60L) }.getOrDefault(emptyList())
+                val dd = d.await(); val hh = h.await()
+                if (dd != null || hh != null) {
+                    result = CityWeather(dd?.first, hh?.first, o?.first, alerts = a, source = "AEMET",
+                        loadedAt = System.currentTimeMillis() - (listOfNotNull(dd?.second, hh?.second).maxOrNull() ?: 0) * 1000)
+                }
+            } catch (_: Exception) { }
+        }
+        if (!result.hasData) {
+            // Sin clave, o AEMET no contesta: Open-Meteo, con la misma interfaz.
+            val om = OpenMeteo.forecast(loc.lat, loc.lon)
+            result = if (om != null) CityWeather(om.daily, om.hourly, om.obs, alerts = result.alerts, source = "Open-Meteo", loadedAt = System.currentTimeMillis())
+            else primed(loc).copy(error = "No se pudo actualizar")
+        }
+        result = result.copy(air = airJob.await(), loading = false)
+        _pages.update { it + (key to result) }
+        return result
+    }
+
+    /** La estación de observación más cercana (si hay clave): se guarda en la ubicación. */
+    private suspend fun nearestStation(loc: SavedLocation): String? {
+        val list = runCatching { stations() }.getOrDefault(emptyList())
+        val best = list.minByOrNull { Places.distanceKm(loc.lat, loc.lon, it.lat!!, it.lon!!) } ?: return null
+        return best.idema
+    }
+}

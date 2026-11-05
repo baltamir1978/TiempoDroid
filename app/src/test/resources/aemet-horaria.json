@@ -1,0 +1,6 @@
+[ { "nombre" : "Segovia", "prediccion" : { "dia" : [ {
+      "estadoCielo" : [ { "value" : "11n", "periodo" : "20", "descripcion" : "Despejado" }, { "value" : "12n", "periodo" : "21", "descripcion" : "Poco nuboso" } ],
+      "probPrecipitacion" : [ { "value" : "0", "periodo" : "1420" }, { "value" : "40", "periodo" : "2002" } ],
+      "temperatura" : [ { "value" : "9", "periodo" : "19" }, { "value" : "8", "periodo" : "20" }, { "value" : "7", "periodo" : "21" } ],
+      "fecha" : "2026-11-05T00:00:00" }, {
+      "temperatura" : [ { "value" : "5", "periodo" : "08" } ], "fecha" : "2026-11-06T00:00:00" } ] } } ]
