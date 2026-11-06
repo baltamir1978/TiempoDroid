@@ -7,7 +7,10 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.4: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.4.apk`.
+**0.3.5: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.5.apk`.
+0.3.5: el icono principal del widget de Tiempo, grande y superpuesto en la esquina (no empuja
+las horas); Netatmo, Sol·Luna y Mareas rehechos con letra fina grande, anillos e iconos mayores y
+menos hueco (Sol·Luna con la duración del día; Mareas con la marea siguiente a la próxima).
 0.3.4: la gráfica de temperatura de la app rehecha como la de iOS (curva suave naranja, eje de
 grados, lluvia en barras en su franja, horas alineadas con sus puntos: antes se descuadraban
 hasta 5 h); widget de Tiempo con letra e iconos más grandes y la lluvia marcada en azul con su

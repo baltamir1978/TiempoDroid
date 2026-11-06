@@ -137,97 +137,111 @@ class NetatmoWidget : GlanceAppWidget() {
         val dark = tempBg && t != null && TempPalette.prefersDarkInk(t, scale)
         val inkArgb = if (dark) 0xFF0B2236.toInt() else 0xFFFFFFFF.toInt()
         val ink = ColorProvider(Color(inkArgb))
-        val soft = ColorProvider(Color(inkArgb).copy(alpha = 0.7f))
+        val soft = ColorProvider(Color(inkArgb).copy(alpha = 0.78f))
         val track = Color(inkArgb).copy(alpha = 0.22f).let { android.graphics.Color.argb((it.alpha * 255).toInt(), (it.red * 255).toInt(), (it.green * 255).toInt(), (it.blue * 255).toInt()) }
         val cool = if (dark) 0xFF1F66D1.toInt() else 0xFF8FD3FF.toInt()
         val good = if (dark) 0xFF1E8C5A.toInt() else 0xFF7CF2B5.toInt()
         val amber = if (dark) 0xFFB26A00.toInt() else 0xFFFFD166.toInt()
         val red = if (dark) 0xFFC0392B.toInt() else 0xFFFF8A80.toInt()
+        val light = androidx.glance.text.FontFamily("sans-serif-light")
 
-        @Composable fun ring(value: Double, lo: Double, hi: Double, tint: Int, text: String, caption: String, sz: Int = 40) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.padding(horizontal = 3.dp)) {
-                Image(ImageProvider(ringBitmap(context, (value - lo) / (hi - lo), tint, track, sz)), caption, GlanceModifier.size(sz.dp))
-                Text(text, style = TextStyle(color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold))
-                Text(caption, maxLines = 1, style = TextStyle(color = soft, fontSize = 9.sp))
+        // Un sensor como anillo con su valor dentro del hueco de debajo y el nombre al pie.
+        @Composable fun ring(value: Double, lo: Double, hi: Double, tint: Int, text: String, caption: String, sz: Int) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.padding(horizontal = 4.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Image(ImageProvider(ringBitmap(context, (value - lo) / (hi - lo), tint, track, sz)), caption, GlanceModifier.size(sz.dp))
+                    Text(text, style = TextStyle(color = ink, fontSize = (sz / 4).coerceIn(12, 16).sp, fontWeight = FontWeight.Bold))
+                }
+                Text(caption, maxLines = 1, style = TextStyle(color = soft, fontSize = 11.sp))
             }
         }
-        @Composable fun range(widthDp: Int) {
+        @Composable fun range(widthDp: Int, sp: Int) {
             val mn = s?.tempMinOut; val mx = s?.tempMaxOut
             if (mn != null && mx != null) Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${mn.roundToInt()}° ", style = TextStyle(color = soft, fontSize = 11.sp))
+                Text("${mn.roundToInt()}° ", style = TextStyle(color = soft, fontSize = sp.sp))
                 Image(ImageProvider(rangeBitmap(context, if (mx > mn && t != null) (t - mn) / (mx - mn) else 0.5, inkArgb, widthDp)), null, GlanceModifier.width(widthDp.dp).height(10.dp))
-                Text(" ${mx.roundToInt()}°", style = TextStyle(color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold))
+                Text(" ${mx.roundToInt()}°", style = TextStyle(color = ink, fontSize = sp.sp, fontWeight = FontWeight.Bold))
             }
         }
         fun temp(v: Double?) = v?.let { "${it.roundToInt()}°" } ?: "—"
-        val light = androidx.glance.text.FontFamily("sans-serif-light")
         @Composable fun big(v: Double?, sp: Int, modifier: GlanceModifier = GlanceModifier) =
-            Text(temp(v), modifier, style = TextStyle(color = ink, fontSize = sp.sp, fontFamily = light))
-        @Composable fun glyph(kind: String, text: String) = Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(ImageProvider(WeatherIcons.glyph(context, kind, inkArgb, 11)), null, GlanceModifier.size(11.dp))
-            Text(" $text", style = TextStyle(color = soft, fontSize = 12.sp))
+            Text(temp(v), modifier, maxLines = 1, style = TextStyle(color = ink, fontSize = sp.sp, fontFamily = light))
+        @Composable fun glyph(kind: String, text: String, sp: Int) = Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(ImageProvider(WeatherIcons.glyph(context, kind, inkArgb, sp)), null, GlanceModifier.size(sp.dp))
+            Text(" $text", maxLines = 1, style = TextStyle(color = soft, fontSize = sp.sp))
         }
+        @Composable fun label(text: String) = Text(text, style = TextStyle(color = soft, fontSize = 11.sp, fontWeight = FontWeight.Bold))
         fun co2Tint(c: Double) = if (c > 1600) red else if (c > 1000) amber else good
 
         WidgetFrame(top, bottom, "netatmo") {
             if (s == null) {
                 Column(GlanceModifier.fillMaxSize().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Abre la app para actualizar", style = TextStyle(color = soft, fontSize = 11.sp))
+                    Text("Abre la app para actualizar", style = TextStyle(color = soft, fontSize = 13.sp))
                 }
                 return@WidgetFrame
             }
-            val updated = "Act. " + Instant.ofEpochMilli(s.at).atZone(ZoneId.systemDefault()).format(hhmm)
-            Column(GlanceModifier.fillMaxSize().padding(12.dp)) {
-                Text(s.stationName, maxLines = 1, style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                when {
-                    size.height >= 250.dp -> {
-                        Spacer(GlanceModifier.defaultWeight())
-                        Text("EXTERIOR", style = TextStyle(color = soft, fontSize = 9.sp, fontWeight = FontWeight.Bold))
-                        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(GlanceModifier.defaultWeight()) {
-                                big(s.temperature, 48)
-                                range(70)
-                            }
-                            s.humidity?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad", 44) }
-                            s.pressure?.let { ring(it, 980.0, 1040.0, good, "${it.roundToInt()}", "Presión", 44) }
-                            (s.rainToday ?: s.rain)?.let { ring(it, 0.0, 10.0, cool, String.format(Locale.getDefault(), "%.1f", it), "Lluvia", 44) }
-                        }
-                        Spacer(GlanceModifier.defaultWeight())
-                        Text("INTERIOR", style = TextStyle(color = soft, fontSize = 9.sp, fontWeight = FontWeight.Bold))
-                        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            big(s.tempIn, 48, GlanceModifier.defaultWeight())
-                            s.humidityIn?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad", 44) }
-                            s.co2?.let { ring(it, 400.0, 2000.0, co2Tint(it), "${it.roundToInt()}", "CO₂ ppm", 44) }
-                            s.noise?.let { ring(it, 30.0, 90.0, inkArgb, "${it.roundToInt()}", "Ruido dB", 44) }
-                        }
-                        Spacer(GlanceModifier.defaultWeight())
-                    }
-                    size.width >= 250.dp -> Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+            val updated = Instant.ofEpochMilli(s.at).atZone(ZoneId.systemDefault()).format(hhmm)
+            @Composable fun header(sp: Int) = Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(s.stationName, GlanceModifier.defaultWeight(), maxLines = 1, style = TextStyle(color = ink, fontSize = sp.sp, fontWeight = FontWeight.Medium))
+                Text(updated, style = TextStyle(color = soft, fontSize = 11.sp))
+            }
+            when {
+                size.height >= 250.dp -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 14.dp)) {
+                    header(16)
+                    Spacer(GlanceModifier.defaultWeight())
+                    label("EXTERIOR")
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(GlanceModifier.defaultWeight()) {
-                            Text("EXTERIOR", style = TextStyle(color = soft, fontSize = 9.sp, fontWeight = FontWeight.Bold))
-                            big(s.temperature, 38)
-                            range(46)
+                            big(s.temperature, 64)
+                            range(80, 13)
                         }
-                        s.humidity?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad") }
-                        Column(GlanceModifier.defaultWeight().padding(start = 6.dp)) {
-                            Text("INTERIOR", style = TextStyle(color = soft, fontSize = 9.sp, fontWeight = FontWeight.Bold))
-                            big(s.tempIn, 38)
-                            s.humidityIn?.let { glyph("drop", "${it.roundToInt()}%") }
-                        }
-                        s.co2?.let { ring(it, 400.0, 2000.0, co2Tint(it), "${it.roundToInt()}", "CO₂ ppm") }
+                        s.humidity?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad", 58) }
+                        s.pressure?.let { ring(it, 980.0, 1040.0, good, "${it.roundToInt()}", "hPa", 58) }
+                        (s.rainToday ?: s.rain)?.let { ring(it, 0.0, 10.0, cool, String.format(Locale.getDefault(), "%.1f", it), "Lluvia mm", 58) }
                     }
-                    else -> Column(GlanceModifier.defaultWeight()) {
-                        big(s.temperature, 44)
-                        range(50)
-                        Spacer(GlanceModifier.defaultWeight())
-                        Row(GlanceModifier) {
-                            s.humidity?.let { glyph("drop", "${it.roundToInt()}%") }
-                            if (s.humidity != null && s.tempIn != null) Spacer(GlanceModifier.width(10.dp))
-                            s.tempIn?.let { glyph("home", temp(it)) }
+                    Spacer(GlanceModifier.defaultWeight())
+                    Box(GlanceModifier.fillMaxWidth().height(1.dp).background(ColorProvider(Color(inkArgb).copy(alpha = 0.22f)))) {}
+                    Spacer(GlanceModifier.defaultWeight())
+                    label("INTERIOR")
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        big(s.tempIn, 64, GlanceModifier.defaultWeight())
+                        s.humidityIn?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad", 58) }
+                        s.co2?.let { ring(it, 400.0, 2000.0, co2Tint(it), "${it.roundToInt()}", "CO₂ ppm", 58) }
+                        s.noise?.let { ring(it, 30.0, 90.0, inkArgb, "${it.roundToInt()}", "Ruido dB", 58) }
+                    }
+                    Spacer(GlanceModifier.defaultWeight())
+                }
+                size.width >= 250.dp -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    header(15)
+                    Spacer(GlanceModifier.defaultWeight())
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(GlanceModifier.defaultWeight()) {
+                            label("EXTERIOR")
+                            big(s.temperature, 48)
+                            range(54, 12)
                         }
+                        s.humidity?.let { ring(it, 0.0, 100.0, cool, "${it.roundToInt()}%", "Humedad", 52) }
+                        Box(GlanceModifier.width(1.dp).height(70.dp).background(ColorProvider(Color(inkArgb).copy(alpha = 0.22f)))) {}
+                        Column(GlanceModifier.defaultWeight().padding(start = 10.dp)) {
+                            label("INTERIOR")
+                            big(s.tempIn, 48)
+                            s.humidityIn?.let { glyph("drop", "${it.roundToInt()}%", 13) }
+                        }
+                        s.co2?.let { ring(it, 400.0, 2000.0, co2Tint(it), "${it.roundToInt()}", "CO₂ ppm", 52) }
+                    }
+                    Spacer(GlanceModifier.defaultWeight())
+                }
+                else -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    header(15)
+                    big(s.temperature, 56)
+                    range(56, 13)
+                    Spacer(GlanceModifier.defaultWeight())
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        s.humidity?.let { glyph("drop", "${it.roundToInt()}%", 14) }
+                        Spacer(GlanceModifier.defaultWeight())
+                        s.tempIn?.let { glyph("home", temp(it), 14) }
                     }
                 }
-                Text(updated, style = TextStyle(color = soft, fontSize = 9.sp))
             }
         }
     }
@@ -254,9 +268,10 @@ class SunMoonWidget : GlanceAppWidget() {
         val next = SunMoon.nextPhases(now, 1).firstOrNull()
         fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
         val nextWhen = next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", es.altamirano.tiempo.core.I18n.locale()))
+        val daylight = sun.daylightMinutes?.let { "${it / 60} h ${"%02d".format(it % 60)} min" }
         provideContent {
             Content(context, loc.name, t(sun.sunrise), t(sun.sunset), t(moon.rise), t(moon.set), moon.ageDays / 29.530588853,
-                moon.illumination, moon.phase.label, next?.first, nextWhen)
+                moon.illumination, moon.phase.label, next?.first, nextWhen, daylight)
         }
     }
 
@@ -265,54 +280,54 @@ class SunMoonWidget : GlanceAppWidget() {
 
     @Composable
     internal fun Content(context: Context, place: String, rise: String, set: String, moonRise: String, moonSet: String, cycle: Double,
-                         illumination: Double, label: String, next: es.altamirano.tiempo.core.MoonPhase?, nextWhen: String?) {
+                         illumination: Double, label: String, next: es.altamirano.tiempo.core.MoonPhase?, nextWhen: String?, daylight: String? = null) {
         val wide = LocalSize.current.width >= 250.dp
-        val white = ColorProvider(Color.White); val soft = ColorProvider(Color.White.copy(alpha = 0.78f))
+        val white = ColorProvider(Color.White); val soft = ColorProvider(Color.White.copy(alpha = 0.8f))
         val ink = 0xFFFFFFFF.toInt()
+        val light = androidx.glance.text.FontFamily("sans-serif-light")
+        // Orto u ocaso: el icono y la hora grande en letra fina.
         @Composable fun sunLine(kind: String, time: String, sp: Int) = Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(ImageProvider(WeatherIcons.glyph(context, kind, ink, sp)), null, GlanceModifier.size(sp.dp))
-            Text("  $time", style = TextStyle(color = white, fontSize = sp.sp, fontWeight = FontWeight.Medium))
+            Image(ImageProvider(WeatherIcons.glyph(context, kind, ink, sp - 2)), null, GlanceModifier.size((sp - 2).dp))
+            Text("  $time", style = TextStyle(color = white, fontSize = sp.sp, fontFamily = light))
         }
+        val illum = "${(illumination * 100).roundToInt()}% iluminada"
         WidgetFrame(GREEN_TOP, GREEN_BOTTOM, "cosmos") {
-            if (!wide) Column(GlanceModifier.fillMaxSize().padding(14.dp)) {
-                Text(place, maxLines = 1, style = TextStyle(color = white, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                Spacer(GlanceModifier.defaultWeight())
-                Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(GlanceModifier.defaultWeight()) {
-                        sunLine("rise", rise, 15)
-                        Spacer(GlanceModifier.height(4.dp))
-                        sunLine("set", set, 15)
-                    }
-                    Image(ImageProvider(WeatherIcons.moon(context, cycle, 44)), label, GlanceModifier.size(44.dp))
+            if (!wide) Box(GlanceModifier.fillMaxSize()) {
+                Column(GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(place, maxLines = 1, style = TextStyle(color = white, fontSize = 15.sp, fontWeight = FontWeight.Medium))
+                    Spacer(GlanceModifier.defaultWeight())
+                    sunLine("rise", rise, 24)
+                    sunLine("set", set, 24)
+                    Spacer(GlanceModifier.defaultWeight())
+                    Text(illum, maxLines = 1, style = TextStyle(color = soft, fontSize = 13.sp))
                 }
-                Spacer(GlanceModifier.defaultWeight())
-                Text("${(illumination * 100).roundToInt()}% iluminada", maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
-            } else Row(GlanceModifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                // La luna grande en la esquina, como el icono del widget de Tiempo.
+                Box(GlanceModifier.fillMaxSize().padding(top = 8.dp, end = 8.dp), contentAlignment = Alignment.TopEnd) {
+                    Image(ImageProvider(WeatherIcons.moon(context, cycle, 56)), label, GlanceModifier.size(56.dp))
+                }
+            } else Row(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(GlanceModifier.defaultWeight()) {
-                    Text(place, maxLines = 1, style = TextStyle(color = white, fontSize = 14.sp, fontWeight = FontWeight.Medium))
-                    Spacer(GlanceModifier.height(8.dp))
-                    sunLine("rise", rise, 15)
+                    Text(place, maxLines = 1, style = TextStyle(color = white, fontSize = 15.sp, fontWeight = FontWeight.Medium))
                     Spacer(GlanceModifier.height(4.dp))
-                    sunLine("set", set, 15)
-                    Spacer(GlanceModifier.height(6.dp))
-                    Text("Luna  ↑ $moonRise   ↓ $moonSet", maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
+                    sunLine("rise", rise, 24)
+                    sunLine("set", set, 24)
+                    daylight?.let { Text("Día: $it", maxLines = 1, style = TextStyle(color = soft, fontSize = 13.sp)) }
+                    Text("Luna  ↑ $moonRise   ↓ $moonSet", maxLines = 1, style = TextStyle(color = soft, fontSize = 13.sp))
                 }
                 Box(GlanceModifier.width(1.dp).fillMaxHeight().background(ColorProvider(Color.White.copy(alpha = 0.25f)))) {}
                 Column(GlanceModifier.defaultWeight().padding(start = 14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(ImageProvider(WeatherIcons.moon(context, cycle, 48)), null, GlanceModifier.size(48.dp))
-                        Column(GlanceModifier.padding(start = 8.dp)) {
-                            Text(label, maxLines = 2, style = TextStyle(color = white, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                            Text("${(illumination * 100).roundToInt()}% iluminada", style = TextStyle(color = soft, fontSize = 12.sp))
-                        }
+                        Image(ImageProvider(WeatherIcons.moon(context, cycle, 56)), null, GlanceModifier.size(56.dp))
+                        Text(label, GlanceModifier.padding(start = 8.dp), maxLines = 2, style = TextStyle(color = white, fontSize = 15.sp, fontWeight = FontWeight.Medium))
                     }
+                    Text(illum, maxLines = 1, style = TextStyle(color = soft, fontSize = 13.sp))
                     if (next != null && nextWhen != null) {
-                        Spacer(GlanceModifier.height(10.dp))
+                        Spacer(GlanceModifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(ImageProvider(WeatherIcons.moon(context, phaseFraction(next), 22)), null, GlanceModifier.size(22.dp))
+                            Image(ImageProvider(WeatherIcons.moon(context, phaseFraction(next), 28)), null, GlanceModifier.size(28.dp))
                             Column(GlanceModifier.padding(start = 8.dp)) {
-                                Text(next.label, maxLines = 1, style = TextStyle(color = white, fontSize = 12.sp))
-                                Text(nextWhen, style = TextStyle(color = soft, fontSize = 11.sp))
+                                Text(next.label, maxLines = 1, style = TextStyle(color = white, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+                                Text(nextWhen, maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
                             }
                         }
                     }
@@ -377,23 +392,28 @@ class TidesWidget : GlanceAppWidget() {
             val bottomArgb = if (day && f < 0.08) navy else whiteArgb
             val topInk = ColorProvider(Color(topArgb)); val bottomInk = ColorProvider(Color(bottomArgb))
             val light = androidx.glance.text.FontFamily("sans-serif-light")
-            val sh = TextStyle(color = bottomInk, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-            Column(GlanceModifier.fillMaxSize().padding(if (wide) 16.dp else 12.dp)) {
-                Text(name, maxLines = 1, style = TextStyle(color = topInk, fontSize = if (wide) 14.sp else 13.sp, fontWeight = FontWeight.Medium))
+            Column(GlanceModifier.fillMaxSize().padding(horizontal = if (wide) 16.dp else 14.dp, vertical = 12.dp)) {
+                Text(name, maxLines = 1, style = TextStyle(color = topInk, fontSize = 15.sp, fontWeight = FontWeight.Medium))
                 Text((if (rising) "↗ " else "↘ ") + String.format(Locale.getDefault(), if (wide) "%.2f m" else "%.1f m", h),
-                    style = TextStyle(color = topInk, fontSize = if (wide) 30.sp else 26.sp, fontFamily = light))
-                if (rise != null && set != null) Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(ImageProvider(WeatherIcons.glyph(context, "rise", topArgb, 12)), null, GlanceModifier.size(12.dp))
-                    Text(" ${rise.atZone(zone).format(hhmm)}   ", style = TextStyle(color = topInk, fontSize = 12.sp))
-                    Image(ImageProvider(WeatherIcons.glyph(context, "set", topArgb, 12)), null, GlanceModifier.size(12.dp))
-                    Text(" ${set.atZone(zone).format(hhmm)}", style = TextStyle(color = topInk, fontSize = 12.sp))
+                    maxLines = 1, style = TextStyle(color = topInk, fontSize = if (wide) 40.sp else 34.sp, fontFamily = light))
+                fun line(t: Tide) = (if (t.high) "Pleamar " else "Bajamar ") + t.at.atZone(zone).format(hhmm) + String.format(Locale.getDefault(), " · %.1f m", t.height)
+                val coming = tides.filter { it.at.isAfter(now) }.sortedBy { it.at }
+                if (rise != null && set != null) Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Image(ImageProvider(WeatherIcons.glyph(context, "rise", topArgb, 14)), null, GlanceModifier.size(14.dp))
+                    Text(" ${rise.atZone(zone).format(hhmm)}    ", style = TextStyle(color = topInk, fontSize = 14.sp))
+                    Image(ImageProvider(WeatherIcons.glyph(context, "set", topArgb, 14)), null, GlanceModifier.size(14.dp))
+                    Text(" ${set.atZone(zone).format(hhmm)}", style = TextStyle(color = topInk, fontSize = 14.sp))
+                    // La siguiente a la próxima, arriba en la arena; abajo, en el agua, sólo una línea.
+                    if (wide) coming.getOrNull(1)?.let {
+                        Spacer(GlanceModifier.defaultWeight())
+                        Text("Luego: " + line(it), maxLines = 1, style = TextStyle(color = topInk, fontSize = 13.sp))
+                    }
                 }
                 Spacer(GlanceModifier.defaultWeight())
-                val nextText = next?.let { (if (it.high) "Pleamar " else "Bajamar ") + it.at.atZone(zone).format(hhmm) + String.format(Locale.getDefault(), " · %.1f m", it.height) }
                 if (wide) Row(GlanceModifier.fillMaxWidth()) {
-                    Text(if (rising) "Subiendo" else "Bajando", style = sh, modifier = GlanceModifier.defaultWeight())
-                    nextText?.let { Text(it, style = sh) }
-                } else nextText?.let { Text(it, maxLines = 1, style = sh) }
+                    Text(if (rising) "Subiendo" else "Bajando", style = TextStyle(color = bottomInk, fontSize = 15.sp, fontWeight = FontWeight.Bold), modifier = GlanceModifier.defaultWeight())
+                    next?.let { Text(line(it), maxLines = 1, style = TextStyle(color = bottomInk, fontSize = 15.sp, fontWeight = FontWeight.Bold)) }
+                } else next?.let { Text(line(it), maxLines = 1, style = TextStyle(color = bottomInk, fontSize = 14.sp, fontWeight = FontWeight.Bold)) }
             }
         }
     }

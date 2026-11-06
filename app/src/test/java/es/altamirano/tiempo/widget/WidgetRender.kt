@@ -107,7 +107,7 @@ class WidgetRender {
         val tides = (-2..8).map { i -> Tide(base.plusSeconds(i * 22350L + 3 * 3600), if (i % 2 == 0) 4.1 else 0.9, i % 2 == 0) }
         for ((s, w, h) in listOf(Triple("small", 170, 170), Triple("medium", 360, 170)))
             render("sol-$s", w, h) { SunMoonWidget().Content(it, "Llanes", "08:12", "18:02", "14:40", "01:15", 0.22, 0.62, "Creciente iluminante",
-                es.altamirano.tiempo.core.MoonPhase.FIRST_QUARTER, "8 nov · 14:30") }
+                es.altamirano.tiempo.core.MoonPhase.FIRST_QUARTER, "8 nov · 14:30", "9 h 50 min") }
         // Marea baja de día (arena), alta de día (agua arriba) y de noche.
         render("mareas-alta", 170, 170) { TidesWidget().Content(it, "Llanes", tides, zone, base.plusSeconds(8 * 3600 - 86400 * 2), base.plusSeconds(18 * 3600 + 86400)) }
         for ((s, w, h) in listOf(Triple("small", 170, 170), Triple("medium", 360, 170)))

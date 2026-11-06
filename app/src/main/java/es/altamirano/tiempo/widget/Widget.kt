@@ -284,15 +284,18 @@ class WeatherWidget : GlanceAppWidget() {
         @androidx.compose.runtime.Composable fun bigTemp(sp: Int) =
             Text("${s!!.temp ?: "—"}°", maxLines = 1, style = TextStyle(color = ink, fontSize = sp.sp, fontFamily = light))
         val maxMin = "↑${s?.max ?: "—"}°  ↓${s?.min ?: "—"}°"
+        // El icono principal, grande y superpuesto arriba a la derecha: así crece sin empujar las horas.
+        @androidx.compose.runtime.Composable fun cornerIcon(dp: Int, topDp: Int, endDp: Int) =
+            Box(GlanceModifier.fillMaxSize().padding(top = topDp.dp, end = endDp.dp), contentAlignment = Alignment.TopEnd) { icon(s?.sky, dp) }
         // La lluvia de ahora: la de la hora más próxima, para la cabecera.
         val rainNow = s?.hourly?.firstOrNull()?.prob
 
         WidgetFrame(top, bottom, "aemet") {
             if (s == null) { Text("Abre la app para cargar el tiempo", GlanceModifier.padding(12.dp), style = TextStyle(color = ink, fontSize = 14.sp)); return@WidgetFrame }
             when {
-                large -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                large -> Box(GlanceModifier.fillMaxSize()) { Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
                     title(17, true)
-                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(GlanceModifier.fillMaxWidth().padding(end = 92.dp), verticalAlignment = Alignment.CenterVertically) {
                         bigTemp(58)
                         Column(GlanceModifier.defaultWeight().padding(start = 10.dp)) {
                             Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Medium))
@@ -303,7 +306,6 @@ class WeatherWidget : GlanceAppWidget() {
                                 s.windKmh?.let { glyph("wind", "$it km/h", 14) }
                             }
                         }
-                        icon(s.sky, 70)
                     }
                     // Las horas: hora e icono; debajo la curva con su temperatura y la lluvia al pie.
                     val hs = s.hourly.take(6)
@@ -341,9 +343,9 @@ class WeatherWidget : GlanceAppWidget() {
                             }
                         } }
                     }
-                }
-                medium -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                }; cornerIcon(110, 4, 8) }
+                medium -> Box(GlanceModifier.fillMaxSize()) { Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Row(GlanceModifier.fillMaxWidth().padding(end = 84.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(GlanceModifier.defaultWeight()) {
                             title(14, true)
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -359,7 +361,6 @@ class WeatherWidget : GlanceAppWidget() {
                                 }
                             }
                         }
-                        icon(s.sky, 58)
                     }
                     Spacer(GlanceModifier.defaultWeight())
                     val hs = s.hourly.take(5)
@@ -374,14 +375,10 @@ class WeatherWidget : GlanceAppWidget() {
                             }
                         }
                     }
-                }
-                else -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                }; cornerIcon(92, 0, 6) }
+                else -> Box(GlanceModifier.fillMaxSize()) { Column(GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp)) {
                     title(15, false)
-                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        bigTemp(52)
-                        Spacer(GlanceModifier.defaultWeight())
-                        icon(s.sky, 56)
-                    }
+                    bigTemp(52)
                     Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium))
                     Spacer(GlanceModifier.defaultWeight())
                     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -393,7 +390,7 @@ class WeatherWidget : GlanceAppWidget() {
                         if (s.humidity != null && s.windKmh != null) Spacer(GlanceModifier.width(10.dp))
                         s.windKmh?.let { glyph("wind", "$it km/h", 13) }
                     }
-                }
+                }; cornerIcon(if ("${s.temp ?: ""}".length > 2) 64 else 80, 22, 4) }
             }
         }
     }
