@@ -79,6 +79,9 @@ class WidgetRender {
             render("tiempo-$n", w, h) { WeatherWidget().Content(it, snap, false, TempScale.DEFAULT) }
             render("tiempo-$n-temp", w, h) { WeatherWidget().Content(it, snap, true, TempScale.DEFAULT) }
         }
+        render("tiempo-medium-50", 360, 170) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalWidgetOpacity provides 0.5f) { WeatherWidget().Content(it, snap, true, TempScale.DEFAULT) }
+        }
     }
 
     @Test fun icons() {

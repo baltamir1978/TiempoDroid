@@ -116,6 +116,10 @@ class Settings(context: Context) {
     fun widgetTempBackground(id: Int, default: Boolean = true): Boolean = prefs.getBoolean("widget-$id-temp", default)
     fun setWidget(id: Int, code: String?, tempBackground: Boolean) =
         prefs.edit().putString("widget-$id", code).putBoolean("widget-$id-temp", tempBackground).apply()
+    fun setWidgetTempBackground(id: Int, on: Boolean) = prefs.edit().putBoolean("widget-$id-temp", on).apply()
+    /** La opacidad del fondo de cada widget, en tanto por ciento (100: opaco). */
+    fun widgetOpacity(id: Int): Int = prefs.getInt("widget-$id-opacidad", 100)
+    fun setWidgetOpacity(id: Int, percent: Int) = prefs.edit().putInt("widget-$id-opacidad", percent.coerceIn(0, 100)).apply()
     /** El puerto del widget de mareas («Editar widget → Estación» en iOS). */
     fun widgetPort(id: Int): String? = prefs.getString("widget-$id-puerto", null)
     fun setWidgetPort(id: Int, port: String) = prefs.edit().putString("widget-$id-puerto", port).apply()

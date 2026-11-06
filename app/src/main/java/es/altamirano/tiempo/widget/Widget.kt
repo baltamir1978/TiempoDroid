@@ -235,7 +235,7 @@ class WeatherWidget : GlanceAppWidget() {
                 val key = app.settings.widgetCity(widgetId) ?: LocationStore.keyOf(app.locations.all().first())
                 Triple(app.snapshots.get(key), app.settings.widgetTempBackground(widgetId), app.settings.tempScale.value)
             }
-            Content(context, snap, tempBg, scale)
+            androidx.compose.runtime.CompositionLocalProvider(LocalWidgetOpacity provides opacity(app, widgetId, stamp)) { Content(context, snap, tempBg, scale) }
         }
     }
 
@@ -444,30 +444,46 @@ class WidgetConfigActivity : ComponentActivity() {
             else -> "weather"
         }
         val locs = app.locations.all()
-        fun done() {
-            app.scope.launch { updateAllWidgets(applicationContext) }
-            setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
-            finish()
+        // Cada cambio se guarda y se ve al momento en el widget; antes el interruptor sólo se
+        // guardaba al tocar una ciudad, y al volver atrás se perdía.
+        fun ok() = setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+        fun refresh() = app.scope.launch {
+            val gm = GlanceAppWidgetManager(applicationContext)
+            val glanceId = runCatching { gm.getGlanceIdBy(id) }.getOrNull() ?: return@launch
+            val widget = when (kind) { "netatmo" -> NetatmoWidget(); "sunmoon" -> SunMoonWidget(); "tides" -> TidesWidget(); else -> WeatherWidget() }
+            runCatching { refreshWidget(applicationContext, widget, glanceId) }
         }
+        fun done() { refresh(); ok(); finish() }
         setContent {
             TiempoTheme {
                 var tempBg by remember { mutableStateOf(app.settings.widgetTempBackground(id, default = kind == "weather")) }
+                var opacity by remember { mutableStateOf(app.settings.widgetOpacity(id).toFloat()) }
+                var city by remember { mutableStateOf(app.settings.widgetCity(id)) }
+                var port by remember { mutableStateOf(app.settings.widgetPort(id) ?: app.settings.tidePort.value) }
                 Surface(Modifier.fillMaxSize()) {
                     androidx.compose.foundation.lazy.LazyColumn(Modifier.padding(16.dp)) {
                         item {
-                            Text(when (kind) { "netatmo" -> "Widget de Netatmo"; "sunmoon" -> "Widget de Sol·Luna"; "tides" -> "Widget de Mareas"; else -> "Widget de Tiempo" },
-                                style = MaterialTheme.typography.titleLarge)
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Text(when (kind) { "netatmo" -> "Widget de Netatmo"; "sunmoon" -> "Widget de Sol·Luna"; "tides" -> "Widget de Mareas"; else -> "Widget de Tiempo" },
+                                    Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                                androidx.compose.material3.Button(onClick = { done() }) { Text("Listo") }
+                            }
                         }
                         if (kind == "weather" || kind == "netatmo") item {
-                            Row(Modifier.padding(vertical = 12.dp)) {
-                                Text("Color según la temperatura", Modifier.weight(1f).padding(top = 12.dp))
-                                Switch(tempBg, { tempBg = it })
+                            Row(Modifier.padding(top = 12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Text("Color según la temperatura", Modifier.weight(1f))
+                                Switch(tempBg, { tempBg = it; app.settings.setWidgetTempBackground(id, it); ok(); refresh() })
+                            }
+                        }
+                        item {
+                            Column(Modifier.padding(vertical = 8.dp)) {
+                                Text("Opacidad del fondo: ${opacity.roundToInt()}%")
+                                androidx.compose.material3.Slider(opacity, { opacity = it }, valueRange = 0f..100f, steps = 19,
+                                    onValueChangeFinished = { app.settings.setWidgetOpacity(id, opacity.roundToInt()); ok(); refresh() })
                             }
                         }
                         when (kind) {
-                            "netatmo" -> item {
-                                androidx.compose.material3.Button(onClick = { app.settings.setWidget(id, null, tempBg); done() }) { Text("Listo") }
-                            }
+                            "netatmo" -> {}
                             "tides" -> {
                                 val here = locs.firstOrNull()
                                 val near = here?.let { es.altamirano.tiempo.core.portsByDistance(it.lat, it.lon).take(4).map { it.first } } ?: emptyList()
@@ -475,16 +491,20 @@ class WidgetConfigActivity : ComponentActivity() {
                                 items(near + es.altamirano.tiempo.core.IHM_STATIONS.filter { it !in near }) { p ->
                                     ListItem(headlineContent = { Text(p.name) },
                                         supportingContent = if (p in near && here != null) { { Text("a ${es.altamirano.tiempo.ui.km(es.altamirano.tiempo.core.Places.distanceKm(here.lat, here.lon, p.lat, p.lon))} km de ${here.name}") } } else null,
-                                        modifier = Modifier.clickable { app.settings.setWidgetPort(id, p.id); done() })
+                                        trailingContent = if (p.id == port) { { Text("✓", color = Green) } } else null,
+                                        modifier = Modifier.clickable { port = p.id; app.settings.setWidgetPort(id, p.id); done() })
                                 }
                             }
                             else -> {
                                 item { Text("Ciudad", style = MaterialTheme.typography.titleSmall, color = Green) }
                                 items(locs) { l ->
+                                    val key = LocationStore.keyOf(l)
                                     ListItem(headlineContent = { Text(if (l.isCurrent) "📍 ${l.name}" else l.name) },
+                                        trailingContent = if (key == (city ?: LocationStore.keyOf(locs.first()))) { { Text("✓", color = Green) } } else null,
                                         modifier = Modifier.clickable {
-                                            app.settings.setWidget(id, LocationStore.keyOf(l), tempBg)
-                                            if (kind == "weather") app.scope.launch { runCatching { app.weather.load(l) }.getOrNull()?.let { app.snapshots.save(l, it) } }
+                                            city = key
+                                            app.settings.setWidget(id, key, tempBg)
+                                            if (kind == "weather") app.scope.launch { runCatching { app.weather.load(l) }.getOrNull()?.let { app.snapshots.save(l, it) }; refresh() }
                                             done()
                                         })
                                 }

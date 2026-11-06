@@ -7,7 +7,11 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (6-nov-2026)
 
-**0.3.7: compila y pasan 35 pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.7.apk`.
+**0.3.8: compila y pasan las pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.8.apk`.
+0.3.8: en la configuración de cada widget, el interruptor «Color según la temperatura» se guarda al
+momento (antes sólo al tocar una ciudad: al volver atrás se perdía) y **opacidad del fondo** (0–100 %,
+en los cuatro; `LocalWidgetOpacity`, el degradado y la playa se pintan ya con ese alfa); botón «Listo»
+en todos y la ciudad o el puerto actuales marcados.
 0.3.7: cabeceras a la misma altura en todas las pestañas (Sol·Luna y Ajustes bajo la barra de estado; las barras de título, de 48 dp en vez de 64) y el calendario lunar sin iconos cortados (el `lineHeight` de 24 sp por omisión no cabía en la celda).
 0.3.6: los widgets hacen caso a la ciudad o el puerto elegidos al ponerlos (ver «Trampas de Glance»).
 0.3.5: el icono principal del widget de Tiempo, grande y superpuesto en la esquina (no empuja

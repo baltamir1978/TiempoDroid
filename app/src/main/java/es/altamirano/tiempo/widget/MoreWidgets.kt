@@ -67,23 +67,48 @@ private val hhmm = DateTimeFormatter.ofPattern("HH:mm")
 private const val GREEN_TOP = 0x37D094
 private const val GREEN_BOTTOM = 0x0B6F53
 
+/**
+ * La opacidad del fondo del widget (0 a 1), elegida al ponerlo o editarlo. Va por un
+ * `CompositionLocal` para no pasarla por cada `Content`; las pruebas la dejan en 1.
+ */
+val LocalWidgetOpacity = androidx.compose.runtime.staticCompositionLocalOf { 1f }
+
+/** Un color RGB con la opacidad del fondo. */
+private fun withOpacity(rgb: Int, opacity: Float): Int = ((opacity.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
+
 /** Un degradado vertical de verdad (Glance sólo pinta fondos lisos): un mapa de bits estirado. */
-fun gradientBitmap(top: Int, bottom: Int): Bitmap {
+fun gradientBitmap(top: Int, bottom: Int, opacity: Float = 1f): Bitmap {
     val b = Bitmap.createBitmap(4, 128, Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(b)
-    c.drawRect(0f, 0f, 4f, 128f, Paint().apply { shader = LinearGradient(0f, 0f, 0f, 128f, top or 0xFF000000.toInt(), bottom or 0xFF000000.toInt(), Shader.TileMode.CLAMP) })
+    c.drawRect(0f, 0f, 4f, 128f, Paint().apply { shader = LinearGradient(0f, 0f, 0f, 128f, withOpacity(top, opacity), withOpacity(bottom, opacity), Shader.TileMode.CLAMP) })
     return b
 }
 
-/** El fondo del widget a pantalla completa, con las esquinas redondeadas. */
+/** Un mapa de bits ya pintado, con la opacidad del fondo (Glance no da alfa a las `Image`). */
+private fun fade(src: Bitmap, opacity: Float): Bitmap {
+    if (opacity >= 1f) return src
+    val b = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+    android.graphics.Canvas(b).drawBitmap(src, 0f, 0f, Paint().apply { alpha = (opacity.coerceIn(0f, 1f) * 255).roundToInt() })
+    return b
+}
+
+/** El fondo del widget a pantalla completa, con las esquinas redondeadas y la opacidad elegida. */
 @Composable
 fun WidgetFrame(top: Int, bottom: Int, deepLink: String, content: @Composable () -> Unit) {
-    Box(GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(20.dp).background(ColorProvider(Color(0xFF000000.toInt() or top)))
+    val opacity = LocalWidgetOpacity.current
+    // Opaco, el color liso de debajo tapa los bordes del mapa de bits; translúcido, se sumaría a él.
+    val under = if (opacity >= 1f) Color(0xFF000000.toInt() or top) else Color.Transparent
+    Box(GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(20.dp).background(ColorProvider(under))
         .clickable(actionStartActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("tiempo://$deepLink")).setPackage("es.altamirano.tiempo")))) {
-        Image(ImageProvider(gradientBitmap(top, bottom)), null, GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        if (opacity > 0f) Image(ImageProvider(gradientBitmap(top, bottom, opacity)), null, GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         content()
     }
 }
+
+/** La opacidad guardada de un widget, releída cuando cambia su sello. */
+@Composable
+internal fun opacity(app: es.altamirano.tiempo.TiempoApp, widgetId: Int, stamp: Long): Float =
+    androidx.compose.runtime.remember(stamp) { app.settings.widgetOpacity(widgetId) / 100f }
 
 private fun density(context: Context) = context.resources.displayMetrics.density
 
@@ -130,7 +155,7 @@ class NetatmoWidget : GlanceAppWidget() {
             val (snap, tempBg, scale) = androidx.compose.runtime.remember(stamp) {
                 Triple(app.netatmo.snapshot(), app.settings.widgetTempBackground(widgetId, default = false), app.settings.tempScale.value)
             }
-            Content(context, snap, tempBg, scale)
+            androidx.compose.runtime.CompositionLocalProvider(LocalWidgetOpacity provides opacity(app, widgetId, stamp)) { Content(context, snap, tempBg, scale) }
         }
     }
 
@@ -280,7 +305,9 @@ class SunMoonWidget : GlanceAppWidget() {
                     next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", es.altamirano.tiempo.core.I18n.locale())),
                     sun.daylightMinutes?.let { "${it / 60} h ${"%02d".format(it % 60)} min" })
             }
-            Content(context, p.place, p.rise, p.set, p.moonRise, p.moonSet, p.cycle, p.illumination, p.label, p.next, p.nextWhen, p.daylight)
+            androidx.compose.runtime.CompositionLocalProvider(LocalWidgetOpacity provides opacity(app, widgetId, stamp)) {
+                Content(context, p.place, p.rise, p.set, p.moonRise, p.moonSet, p.cycle, p.illumination, p.label, p.next, p.nextWhen, p.daylight)
+            }
         }
     }
 
@@ -380,7 +407,9 @@ class TidesWidget : GlanceAppWidget() {
             androidx.compose.runtime.LaunchedEffect(stamp) { if (stamp != 0L) tides = p.id to load(p) }
             val zone = app.tides.zone(p)
             val sun = SunMoon.sun(LocalDate.now(zone), p.lat, p.lon, zone)
-            Content(context, p.name, if (tides.first == p.id) tides.second else emptyList(), zone, sun.sunrise, sun.sunset)
+            androidx.compose.runtime.CompositionLocalProvider(LocalWidgetOpacity provides opacity(app, widgetId, stamp)) {
+                Content(context, p.name, if (tides.first == p.id) tides.second else emptyList(), zone, sun.sunrise, sun.sunset)
+            }
         }
     }
 
@@ -392,7 +421,8 @@ class TidesWidget : GlanceAppWidget() {
         val white = ColorProvider(Color.White)
         val day = (rise == null || set == null) || (now.isAfter(rise) && now.isBefore(set))
         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("tiempo://tides")).setPackage("es.altamirano.tiempo")
-        Box(GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(20.dp).background(ColorProvider(Color(0xFF3AA4DD)))
+        val opacity = LocalWidgetOpacity.current
+        Box(GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(20.dp).background(ColorProvider(Color(withOpacity(0x3AA4DD, opacity))))
             .clickable(actionStartActivity(intent))) {
             val todays = tides.filter { it.at.atZone(zone).toLocalDate() == LocalDate.now(zone) }
             if (tides.size < 2 || todays.isEmpty()) {
@@ -407,7 +437,7 @@ class TidesWidget : GlanceAppWidget() {
             val rising = next?.high ?: false
             val lo = todays.minOf { it.height }; val hi = todays.maxOf { it.height }
             val f = ((h - lo) / max(0.01, hi - lo)).coerceIn(0.0, 1.0)
-            Image(ImageProvider(beach(context, size.width.value.roundToInt(), size.height.value.roundToInt(), f, day)), null,
+            if (opacity > 0f) Image(ImageProvider(fade(beach(context, size.width.value.roundToInt(), size.height.value.roundToInt(), f, day), opacity)), null,
                 GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             // El texto de arriba cae en la arena salvo con la marea muy alta; el de abajo, casi siempre en el agua.
             val navy = 0xFF0B2236.toInt(); val whiteArgb = 0xFFFFFFFF.toInt()
