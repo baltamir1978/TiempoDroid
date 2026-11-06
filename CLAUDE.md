@@ -5,9 +5,9 @@ Compose**. En el móvil se llamará **Tiempo ES**, como en el iPhone. Lo común 
 (firma, `versionCode`, secretos, distribución, código compartido) está en el `CLAUDE.md` de la
 carpeta de proyectos; aquí va lo propio de esta.
 
-## Estado (5-nov-2026)
+## Estado (6-nov-2026)
 
-**0.3.6: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.6.apk`.
+**0.3.6: compila y pasan 35 pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.6.apk`.
 0.3.6: los widgets hacen caso a la ciudad o el puerto elegidos al ponerlos (ver «Trampas de Glance»).
 0.3.5: el icono principal del widget de Tiempo, grande y superpuesto en la esquina (no empuja
 las horas); Netatmo, Sol·Luna y Mareas rehechos con letra fina grande, anillos e iconos mayores y
