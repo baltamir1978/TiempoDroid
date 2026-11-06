@@ -322,3 +322,15 @@ Widgets · color según la temperatura	Widgets · colour by temperature	Widgets 
 🏖️ Bajamar	🏖️ Low tide	🏖️ Baixamar	🏖️ Itsasbehera	🏖️ Baixamar
 🏖️ Bajamar {}	🏖️ Low tide {}	🏖️ Baixamar {}	🏖️ Itsasbehera {}	🏖️ Baixamar {}
 ⚠ {}	⚠ {}	⚠ {}	⚠ {}	⚠ {}
+Ahora: {}	Now: {}	Agora: {}	Orain: {}	Ara: {}
+Estaciones cercanas	Nearby stations	Estacións próximas	Estazio hurbilak	Estacions properes
+Automática usa la estación más cercana. Si está al otro lado de la montaña, elige a mano la que comparta tu valle o tu altitud.	Automatic uses the nearest station. If it sits on the other side of the mountain, pick the one that shares your valley or your altitude.	Automática usa a estación máis próxima. Se está ao outro lado da montaña, escolle a man a que comparta o teu val ou a túa altitude.	Automatikoak estazio hurbilena erabiltzen du. Mendiaren beste aldean badago, aukeratu eskuz zure harana edo altuera partekatzen duena.	Automàtica fa servir l'estació més propera. Si és a l'altra banda de la muntanya, tria a mà la que comparteixi la teva vall o la teva altitud.
+AEMET sin respuesta · datos anteriores	AEMET not responding · previous data	AEMET sen resposta · datos anteriores	AEMETek ez du erantzuten · aurreko datuak	AEMET sense resposta · dades anteriors
+AEMET no disponible: {}	AEMET unavailable: {}	AEMET non dispoñible: {}	AEMET ez dago erabilgarri: {}	AEMET no disponible: {}
+sin respuesta	no response	sen resposta	erantzunik ez	sense resposta
+Predicción: {}	Forecast: {}	Predición: {}	Iragarpena: {}	Predicció: {}
+Comprobando la clave…	Checking the key…	Comprobando a clave…	Gakoa egiaztatzen…	Comprovant la clau…
+Sin clave: el tiempo sale de Open-Meteo.	No key: the weather comes from Open-Meteo.	Sen clave: o tempo sae de Open-Meteo.	Gakorik gabe: eguraldia Open-Meteotik dator.	Sense clau: el temps surt d'Open-Meteo.
+✓ AEMET responde	✓ AEMET is responding	✓ AEMET responde	✓ AEMETek erantzuten du	✓ AEMET respon
+La clave caduca el {} (faltan {} días)	The key expires on {} ({} days left)	A clave caduca o {} (faltan {} días)	Gakoa {} iraungiko da ({} egun falta)	La clau caduca el {} (falten {} dies)
+La clave caducó el {}	The key expired on {}	A clave caducou o {}	Gakoa {} iraungi zen	La clau va caducar el {}

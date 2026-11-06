@@ -7,7 +7,7 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.1: compila y pasan 30 pruebas; sin probar en el móvil.** Clave de AEMET nueva (6-nov). APK en `~/Documentos/Tiempo-0.3.1.apk`.
+**0.3.2: compila y pasan 31 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.2.apk`. 0.3.2: selector de estación con las 5 más próximas (la lista de AEMET trae una fila por estación y hora: hay que deduplicar), nombres como `shortStationName`, la página dice «AEMET no disponible: …» si cae a Open-Meteo, «Predicción:» en el pie, y Ajustes comprueba la clave y dice cuándo caduca. Si la clave guardada en Ajustes caduca antes que la del APK, manda la del APK.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con

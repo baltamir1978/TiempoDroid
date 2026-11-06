@@ -302,3 +302,15 @@ Widgets · color según la temperatura	Widgets · color segons la temperatura
 🏖️ Bajamar	🏖️ Baixamar
 🏖️ Bajamar {}	🏖️ Baixamar {}
 ⚠ {}	⚠ {}
+Ahora: {}	Ara: {}
+Estaciones cercanas	Estacions properes
+Automática usa la estación más cercana. Si está al otro lado de la montaña, elige a mano la que comparta tu valle o tu altitud.	Automàtica fa servir l'estació més propera. Si és a l'altra banda de la muntanya, tria a mà la que comparteixi la teva vall o la teva altitud.
+AEMET sin respuesta · datos anteriores	AEMET sense resposta · dades anteriors
+AEMET no disponible: {}	AEMET no disponible: {}
+sin respuesta	sense resposta
+Predicción: {}	Predicció: {}
+Comprobando la clave…	Comprovant la clau…
+Sin clave: el tiempo sale de Open-Meteo.	Sense clau: el temps surt d'Open-Meteo.
+✓ AEMET responde	✓ AEMET respon
+La clave caduca el {} (faltan {} días)	La clau caduca el {} (falten {} dies)
+La clave caducó el {}	La clau va caducar el {}

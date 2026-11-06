@@ -318,3 +318,15 @@ Widgets · color según la temperatura	Widgetak · kolorea tenperaturaren araber
 🏖️ Bajamar	🏖️ Itsasbehera
 🏖️ Bajamar {}	🏖️ Itsasbehera {}
 ⚠ {}	⚠ {}
+Ahora: {}	Orain: {}
+Estaciones cercanas	Estazio hurbilak
+Automática usa la estación más cercana. Si está al otro lado de la montaña, elige a mano la que comparta tu valle o tu altitud.	Automatikoak estazio hurbilena erabiltzen du. Mendiaren beste aldean badago, aukeratu eskuz zure harana edo altuera partekatzen duena.
+AEMET sin respuesta · datos anteriores	AEMETek ez du erantzuten · aurreko datuak
+AEMET no disponible: {}	AEMET ez dago erabilgarri: {}
+sin respuesta	erantzunik ez
+Predicción: {}	Iragarpena: {}
+Comprobando la clave…	Gakoa egiaztatzen…
+Sin clave: el tiempo sale de Open-Meteo.	Gakorik gabe: eguraldia Open-Meteotik dator.
+✓ AEMET responde	✓ AEMETek erantzuten du
+La clave caduca el {} (faltan {} días)	Gakoa {} iraungiko da ({} egun falta)
+La clave caducó el {}	Gakoa {} iraungi zen

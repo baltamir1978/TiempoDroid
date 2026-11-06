@@ -82,6 +82,10 @@ class Aemet(private val cache: DiskCache, private val apiKey: () -> String) {
 
     val configured get() = apiKey().isNotBlank()
 
+    /** Para Ajustes: null si AEMET acepta la clave; si no, lo que contesta («Tu apiKey ha superado…»). */
+    suspend fun check(): String? = runCatching { dataUrl("prediccion/especifica/municipio/diaria/28079"); null }
+        .getOrElse { it.message ?: "sin respuesta" }
+
     private suspend fun dataUrl(path: String): String {
         val key = apiKey().ifBlank { throw ServiceError("Sin clave de AEMET") }
         var last: Exception = ServiceError("AEMET: demasiadas peticiones, espera un momento.")

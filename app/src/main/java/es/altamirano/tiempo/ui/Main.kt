@@ -568,6 +568,23 @@ private fun SettingsTab() {
                         TextButton(enabled = draft != key, onClick = { app.settings.setAemetKey(draft) }) { Text("Guardar") }
                         TextButton(onClick = { draft = ""; app.settings.setAemetKey("") }) { Text("Quitar") }
                     }
+                    // ¿Funciona? Se pregunta a AEMET de verdad, y la fecha de caducidad va dentro de la clave.
+                    var status by remember(key) { mutableStateOf<String?>(null) }
+                    LaunchedEffect(key) { status = if (key.isBlank()) "" else app.weather.aemet.check() ?: "ok" }
+                    val exp = es.altamirano.tiempo.data.aemetKeyExpiry(key)?.let {
+                        java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate() }
+                    when (status) {
+                        null -> Text("Comprobando la clave…", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        "" -> Text("Sin clave: el tiempo sale de Open-Meteo.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        "ok" -> Text("✓ AEMET responde", fontSize = 13.sp, color = Green, fontWeight = FontWeight.SemiBold)
+                        else -> Text("AEMET no disponible: " + status!!.removePrefix("AEMET: "), fontSize = 13.sp, color = Color(0xFFFF9500))
+                    }
+                    exp?.let {
+                        val left = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), it)
+                        Text(if (left < 0) "La clave caducó el ${it.format(DateTimeFormatter.ofPattern("d MMM yyyy", Spanish))}"
+                            else "La clave caduca el ${it.format(DateTimeFormatter.ofPattern("d MMM yyyy", Spanish))} (faltan $left días)",
+                            fontSize = 12.sp, color = if (left < 15) Color(0xFFFF9500) else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Text("Sin clave, el tiempo sale de Open-Meteo con la misma pantalla. La clave se pide gratis en opendata.aemet.es " +
                         "y hay que renovarla cuando AEMET lo pide.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

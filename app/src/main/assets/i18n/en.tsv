@@ -314,3 +314,15 @@ Widgets · color según la temperatura	Widgets · colour by temperature
 🏖️ Bajamar	🏖️ Low tide
 🏖️ Bajamar {}	🏖️ Low tide {}
 ⚠ {}	⚠ {}
+Ahora: {}	Now: {}
+Estaciones cercanas	Nearby stations
+Automática usa la estación más cercana. Si está al otro lado de la montaña, elige a mano la que comparta tu valle o tu altitud.	Automatic uses the nearest station. If it sits on the other side of the mountain, pick the one that shares your valley or your altitude.
+AEMET sin respuesta · datos anteriores	AEMET not responding · previous data
+AEMET no disponible: {}	AEMET unavailable: {}
+sin respuesta	no response
+Predicción: {}	Forecast: {}
+Comprobando la clave…	Checking the key…
+Sin clave: el tiempo sale de Open-Meteo.	No key: the weather comes from Open-Meteo.
+✓ AEMET responde	✓ AEMET is responding
+La clave caduca el {} (faltan {} días)	The key expires on {} ({} days left)
+La clave caducó el {}	The key expired on {}

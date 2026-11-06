@@ -234,12 +234,15 @@ private fun StationPicker(loc: SavedLocation, onDismiss: () -> Unit) {
                 nearby!!.isEmpty() -> Text("No se pudo cargar la red de estaciones de AEMET (¿clave caducada?).")
                 else -> LazyColumn {
                     item {
-                        StationRow("Automática", "La más cercana" + (nearby!!.first().first.ubi?.let { ": " + WeatherRepo.stationName(it) } ?: ""),
+                        // Como iOS: en automática, la que se está usando (la de la tarjeta); con una fijada, la que se usaría.
+                        val nearest = nearby!!.first().first.let { WeatherRepo.stationName(it.ubi ?: it.idema ?: "") }
+                        StationRow("Automática", "Ahora: " + (if (!loc.stationPinned) loc.stationName ?: nearest else nearest),
                             !loc.stationPinned) { pick(null, null) }
-                        Text("Si la más cercana está al otro lado de la montaña, elige la que comparta tu valle o tu altitud.",
+                        Text("Automática usa la estación más cercana. Si está al otro lado de la montaña, elige a mano la que comparta tu valle o tu altitud.",
                             Modifier.padding(vertical = 6.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
+                    item { Text("Estaciones cercanas", Modifier.padding(top = 10.dp, bottom = 2.dp), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     items(nearby!!) { (st, d) ->
                         StationRow(WeatherRepo.stationName(st.ubi ?: st.idema ?: ""),
                             "a ${km(d)} km" + (st.alt?.let { " · ${it.roundToInt()} m" } ?: ""),
@@ -481,6 +484,10 @@ private fun SourceFooter(w: CityWeather) {
             val t = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Spanish))
             Text("Actualizado $t", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        // Como `sourceCard` de iOS: cuándo elaboró AEMET la predicción.
+        (w.daily?.elaborado ?: w.hourly?.elaborado)?.takeIf { w.source == "AEMET" }?.let { e ->
+            runCatching { java.time.LocalDateTime.parse(e.take(19)).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Spanish)) }.getOrNull()
+        }?.let { Text("Predicción: $it", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         Text("Fuente: " + when {
             w.source == "AEMET" -> "© AEMET"; w.source == null -> "—"; w.source.startsWith("IPMA") -> "© ${w.source}"; else -> "Open-Meteo (CC BY 4.0)" },
             fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

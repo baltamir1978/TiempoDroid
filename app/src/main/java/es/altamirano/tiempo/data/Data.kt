@@ -76,9 +76,25 @@ data class SavedLocation(
     }
 }
 
+/** La clave de AEMET es un JWT: su `exp` (segundos) dice cuándo caduca. */
+fun aemetKeyExpiry(key: String): Long? = runCatching {
+    val payload = String(java.util.Base64.getUrlDecoder().decode(key.split('.')[1].trimEnd('=')))
+    Regex("\"exp\"\\s*:\\s*(\\d+)").find(payload)!!.groupValues[1].toLong()
+}.getOrNull()
+
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
-    private val _key = MutableStateFlow(prefs.getString("aemet", null) ?: BuildConfig.AEMET_API_KEY)
+    // La de Ajustes manda, salvo que la del APK caduque más tarde (una clave guardada en la app
+    // tapaba para siempre la renovada en `local.properties`). Vacía en Ajustes = sin clave, a propósito.
+    private val _key = MutableStateFlow(prefs.getString("aemet", null).let { saved ->
+        val built = BuildConfig.AEMET_API_KEY
+        when {
+            saved == null -> built
+            saved.isBlank() -> ""
+            (aemetKeyExpiry(built) ?: 0) > (aemetKeyExpiry(saved) ?: 0) -> built
+            else -> saved
+        }
+    })
     val aemetKey: StateFlow<String> = _key.asStateFlow()
     private val _scale = MutableStateFlow(runCatching { TempScale.valueOf(prefs.getString("escala", "")!!) }.getOrDefault(TempScale.DEFAULT))
     val tempScale: StateFlow<TempScale> = _scale.asStateFlow()
@@ -258,26 +274,37 @@ class WeatherRepo(
             _pages.update { it + (key to result) }
             return result
         }
+        // Como iOS: si AEMET no contesta se dice en la página, y no sólo se cambia de fuente.
+        var aemetError: String? = null
         if (aemet.configured && code.isNotEmpty()) {
             try {
-                val d = scope.async { runCatching { aemet.daily(code, maxAge) }.getOrNull() }
-                val h = scope.async { runCatching { aemet.hourly(code, maxAge) }.getOrNull() }
+                val d = scope.async { runCatching { aemet.daily(code, maxAge) } }
+                val h = scope.async { runCatching { aemet.hourly(code, maxAge) } }
                 val idema = loc.idema ?: nearbyStations(loc.lat, loc.lon, 1).firstOrNull()?.let { (st, km) ->
                     onStation(withStation(loc, st, km, pinned = false)); st.idema
                 }
                 val o = idema?.let { runCatching { aemet.observation(it, if (force) null else 10 * 60L) }.getOrNull() }
                 val a = runCatching { aemet.alerts(code, loc.lat, loc.lon, if (force) null else 30 * 60L) }.getOrDefault(emptyList())
-                val dd = d.await(); val hh = h.await()
+                val dr = d.await(); val hr = h.await()
+                val dd = dr.getOrNull(); val hh = hr.getOrNull()
                 if (dd != null || hh != null) {
+                    val ages = listOfNotNull(dd?.second, hh?.second)
+                    // La caché devuelve su edad: si toda es más vieja de lo pedido, AEMET falló y se tiró de disco.
+                    val stale = ages.all { it >= (maxAge ?: 1L) }
                     result = CityWeather(dd?.first, hh?.first, o?.first, alerts = a, source = "AEMET",
-                        loadedAt = System.currentTimeMillis() - (listOfNotNull(dd?.second, hh?.second).maxOrNull() ?: 0) * 1000)
+                        loadedAt = System.currentTimeMillis() - (ages.maxOrNull() ?: 0) * 1000,
+                        error = if (stale) "AEMET sin respuesta · datos anteriores" else null)
+                } else {
+                    aemetError = (dr.exceptionOrNull() ?: hr.exceptionOrNull())?.message ?: "sin respuesta"
+                    result = CityWeather(alerts = a)
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) { aemetError = e.message ?: "sin respuesta" }
         }
         if (!result.hasData) {
             // Sin clave, o AEMET no contesta: Open-Meteo, con la misma interfaz.
             val om = OpenMeteo.forecast(loc.lat, loc.lon)
-            result = if (om != null) CityWeather(om.daily, om.hourly, om.obs, alerts = result.alerts, source = "Open-Meteo", loadedAt = System.currentTimeMillis())
+            result = if (om != null) CityWeather(om.daily, om.hourly, om.obs, alerts = result.alerts, source = "Open-Meteo", loadedAt = System.currentTimeMillis(),
+                error = aemetError?.let { "AEMET no disponible: " + it.removePrefix("AEMET: ") })
             else primed(loc).copy(error = "No se pudo actualizar")
         }
         result = result.copy(air = airJob.await(), loading = false)
@@ -309,17 +336,48 @@ class WeatherRepo(
     }
 
     /** Las estaciones de AEMET más cercanas, con su distancia (hace falta la clave). */
-    suspend fun nearbyStations(lat: Double, lon: Double, n: Int = 15): List<Pair<ObsRecord, Double>> =
+    // `observacion/convencional/todas` trae una fila por estación y por hora: una por estación
+    // (la primera; repiten coordenadas), y sólo las que tienen indicativo y posición.
+    suspend fun nearbyStations(lat: Double, lon: Double, n: Int = 5): List<Pair<ObsRecord, Double>> =
         runCatching { stations() }.getOrDefault(emptyList())
+            .filter { it.idema != null && it.lat != null && it.lon != null }.distinctBy { it.idema }
             .map { it to Places.distanceKm(lat, lon, it.lat!!, it.lon!!) }.sortedBy { it.second }.take(n)
 
     companion object {
         fun withStation(loc: SavedLocation, st: ObsRecord, km: Double, pinned: Boolean) =
             loc.copy(idema = st.idema, stationName = stationName(st.ubi ?: st.idema ?: ""), stationKm = km, stationPinned = pinned)
 
-        /** «MADRID, CIUDAD UNIVERSITARIA» → «Madrid, Ciudad Universitaria». */
-        fun stationName(ubi: String): String = ubi.lowercase(java.util.Locale("es", "ES")).split(" ").joinToString(" ") { w ->
-            if (w in setOf("de", "del", "la", "las", "los", "el", "y")) w else w.replaceFirstChar { it.titlecase() }
-        }.replaceFirstChar { it.titlecase() }
+        /**
+         * `shortStationName` de iOS: «MADRID, EL GOLOSO» → «El Goloso»; «MADRID/RETIRO» → «Retiro»;
+         * «ALMERÍA/AEROPUERTO» → «Almería, Aeropuerto» (un sitio genérico no dice nada solo);
+         * «EVC_NIEMBRU-LLANES» → «Niembru-Llanes». El doble espacio se normaliza, no se corta,
+         * porque AEMET también lo pone dentro de nombres («SANTA EULALIA  DEL CAMPO»).
+         */
+        fun stationName(ubi: String): String {
+            var name = ubi.trim()
+            if (name.uppercase().startsWith("EVC_")) name = name.drop(4)
+            name = name.split(" ").filter { it.isNotEmpty() }.joinToString(" ")
+            val parts = name.split(',', '/').map { it.trim() }.filter { it.isNotEmpty() }
+            val tail = parts.lastOrNull() ?: return titleCased(name)
+            if (parts.size < 2 || !isGenericSite(tail)) return titleCased(tail)
+            return titleCased(parts[0]) + ", " + titleCased(tail)
+        }
+
+        private val genericSiteHeads = setOf("aeropuerto", "aerodromo", "base", "deposito", "depuradora", "embalse", "presa",
+            "faro", "puerto", "parque", "instituto", "universidad", "facultad", "fac.", "jardin", "observatorio", "famet", "centro", "ciudad")
+        private val linking = setOf("de", "del", "la", "las", "los", "el", "y", "e", "en", "al", "a", "da", "do", "dels")
+        private val esES = java.util.Locale("es", "ES")
+
+        private fun normalize(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "").lowercase(esES).trim()
+
+        private fun isGenericSite(tail: String) = normalize(tail.split(" ").first()) in genericSiteHeads
+
+        /** Como `.capitalized` (mayúscula tras espacio, guion, paréntesis…) y los enlaces en minúscula salvo al principio. */
+        private fun titleCased(s: String): String {
+            val sb = StringBuilder(); var up = true
+            for (c in s.lowercase(esES)) { sb.append(if (up && c.isLetter()) c.titlecase(esES) else c.toString()); up = !c.isLetterOrDigit() && c != '\'' }
+            return sb.split(" ").mapIndexed { i, w -> if (i > 0 && normalize(w) in linking) w.lowercase(esES) else w }.joinToString(" ")
+        }
     }
 }
