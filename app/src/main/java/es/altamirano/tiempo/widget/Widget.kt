@@ -162,45 +162,65 @@ private fun dayBar(context: Context, lo: Double, hi: Double, wMin: Double, wMax:
 
 /**
  * La curva de temperatura de las próximas horas (como las de tendencia de Breezy): un punto por
- * columna, con su temperatura encima y un velo bajo la línea. Va en un mapa de bits porque Glance
- * no dibuja.
+ * columna con su temperatura encima, un velo bajo la línea y, al pie, la probabilidad de lluvia en
+ * barras azules con su porcentaje (como la gráfica de la app). Mapa de bits: Glance no dibuja.
  */
-private fun hourCurve(context: Context, temps: List<Int>, widthDp: Int, heightDp: Int, ink: Int): android.graphics.Bitmap {
+private fun hourCurve(context: Context, temps: List<Int>, probs: List<Int?>, widthDp: Int, heightDp: Int, ink: Int, rainArgb: Int): android.graphics.Bitmap {
     val d = context.resources.displayMetrics.density
+    val sp = context.resources.displayMetrics.scaledDensity
     val w = (widthDp * d).roundToInt().coerceAtLeast(8); val h = (heightDp * d).roundToInt().coerceAtLeast(8)
     val b = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     if (temps.isEmpty()) return b
     val c = android.graphics.Canvas(b)
+    val hasRain = probs.any { (it ?: 0) > 0 }
+    val rainBand = if (hasRain) 42 * d else 0f                   // la franja de la lluvia, abajo
     val lo = temps.min(); val hi = temps.max(); val span = (hi - lo).coerceAtLeast(3)
-    val top = 17 * d; val bottom = h - 5 * d
+    val top = 20 * d; val bottom = h - rainBand - 6 * d
     val xs = temps.indices.map { (it + 0.5f) * w / temps.size }
     val ys = temps.map { bottom - (it - lo).toFloat() / span * (bottom - top) }
     val line = android.graphics.Path().apply {
         moveTo(xs[0], ys[0])
         for (i in 1 until xs.size) { val mx = (xs[i - 1] + xs[i]) / 2; cubicTo(mx, ys[i - 1], mx, ys[i], xs[i], ys[i]) }
     }
-    val fill = android.graphics.Path(line).apply { lineTo(xs.last(), h.toFloat()); lineTo(xs.first(), h.toFloat()); close() }
+    val fill = android.graphics.Path(line).apply { lineTo(xs.last(), h - rainBand); lineTo(xs.first(), h - rainBand); close() }
     val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
     val a = ink and 0x00FFFFFF
-    p.shader = android.graphics.LinearGradient(0f, top, 0f, h.toFloat(), a or 0x40000000, a, android.graphics.Shader.TileMode.CLAMP)
+    p.shader = android.graphics.LinearGradient(0f, top, 0f, h - rainBand, a or 0x40000000, a, android.graphics.Shader.TileMode.CLAMP)
     c.drawPath(fill, p); p.shader = null
-    p.style = android.graphics.Paint.Style.STROKE; p.strokeWidth = 2.2f * d; p.color = a or 0xE6000000.toInt(); p.strokeCap = android.graphics.Paint.Cap.ROUND
+    p.style = android.graphics.Paint.Style.STROKE; p.strokeWidth = 2.5f * d; p.color = a or 0xE6000000.toInt(); p.strokeCap = android.graphics.Paint.Cap.ROUND
     c.drawPath(line, p)
     p.style = android.graphics.Paint.Style.FILL; p.color = ink
+    val bold = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
     val tp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = ink; textSize = 12.5f * context.resources.displayMetrics.scaledDensity / d * d
-        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD); textAlign = android.graphics.Paint.Align.CENTER
+        color = ink; textSize = 15 * sp; typeface = bold; textAlign = android.graphics.Paint.Align.CENTER
     }
-    xs.indices.forEach { i -> c.drawCircle(xs[i], ys[i], 3 * d, p); c.drawText("${temps[i]}°", xs[i], ys[i] - 6 * d, tp) }
+    xs.indices.forEach { i -> c.drawCircle(xs[i], ys[i], 3.5f * d, p); c.drawText("${temps[i]}°", xs[i], ys[i] - 7 * d, tp) }
+    if (hasRain) {
+        val bar = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = rainArgb }
+        val rp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = rainArgb; textSize = 12 * sp; typeface = bold; textAlign = android.graphics.Paint.Align.CENTER
+        }
+        val base = h.toFloat(); val bw = 16 * d; val maxH = rainBand - 15 * d
+        xs.indices.forEach { i ->
+            val pr = probs.getOrNull(i) ?: 0
+            if (pr > 0) {
+                val bh = (maxH * pr / 100f).coerceAtLeast(2 * d)
+                bar.alpha = 110 + (145 * pr / 100)                    // más lluvia, más intensa
+                c.drawRoundRect(xs[i] - bw / 2, base - bh, xs[i] + bw / 2, base, 2 * d, 2 * d, bar)
+                c.drawText("$pr%", xs[i], base - bh - 4 * d, rp)
+            }
+        }
+    }
     return b
 }
 
 /**
  * El widget de Tiempo en tres tamaños, como en iOS: pequeño (2×2), mediano (4×2) y grande (4×4).
  * Con el aire de Breezy Weather: temperatura grande en letra fina, iconos dibujados
- * (`WeatherIcons`), poco texto y el aviso como una etiqueta. El mediano: sitio y aviso, la
- * temperatura con el cielo y máx/mín, el icono con humedad y viento, y cinco horas. El grande
- * añade la curva de seis horas y los cinco días con su barra en la escala de la semana.
+ * (`WeatherIcons`), poco texto y el aviso como una etiqueta. Letra e iconos grandes para llenar
+ * el widget, y la lluvia siempre en azul con su gota. El mediano: sitio y aviso, temperatura con
+ * cielo, máx/mín, humedad y viento, el icono, y cinco horas. El grande añade la curva de seis horas
+ * con la lluvia al pie y los cinco días con su barra en la escala de la semana.
  */
 class WeatherWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(DpSize(110.dp, 110.dp), DpSize(250.dp, 110.dp), DpSize(250.dp, 250.dp)))
@@ -226,80 +246,78 @@ class WeatherWidget : GlanceAppWidget() {
         val inkColor = if (dark) Color(0xFF0B2236) else Color.White
         val inkArgb = if (dark) 0xFF0B2236.toInt() else 0xFFFFFFFF.toInt()
         val ink = ColorProvider(inkColor)
-        val soft = ColorProvider(inkColor.copy(alpha = 0.78f))
-        val rain = ColorProvider(if (dark) Color(0xFF0A3A8C) else Color(0xFFC4E9FF))
+        val soft = ColorProvider(inkColor.copy(alpha = 0.8f))
+        val rainArgb = if (dark) 0xFF0A3A8C.toInt() else 0xFFBDE6FF.toInt()
+        val rain = ColorProvider(Color(rainArgb))
         val light = androidx.glance.text.FontFamily("sans-serif-light")
         val now = java.time.LocalDate.now()
 
         @androidx.compose.runtime.Composable fun icon(code: String?, dp: Int) =
             Image(ImageProvider(WeatherIcons.sky(context, code, dp)), null, GlanceModifier.size(dp.dp))
-        @androidx.compose.runtime.Composable fun glyph(kind: String, text: String) {
+        @androidx.compose.runtime.Composable fun glyph(kind: String, text: String, sp: Int, tint: Int = inkArgb, color: ColorProvider = soft) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(ImageProvider(WeatherIcons.glyph(context, kind, inkArgb, 11)), null, GlanceModifier.size(11.dp))
-                Text(" $text", maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
+                Image(ImageProvider(WeatherIcons.glyph(context, kind, tint, sp)), null, GlanceModifier.size(sp.dp))
+                Text(" $text", maxLines = 1, style = TextStyle(color = color, fontSize = sp.sp))
             }
         }
-        // El aviso como etiqueta del color del nivel; el texto oscuro sobre amarillo y naranja.
-        @androidx.compose.runtime.Composable fun alertChip(full: Boolean) {
+        // La lluvia: gota azul y porcentaje en negrita; vacío (pero con su sitio) si no llueve.
+        @androidx.compose.runtime.Composable fun rainMark(prob: Int?, sp: Int) {
+            if ((prob ?: 0) > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(ImageProvider(WeatherIcons.glyph(context, "drop", rainArgb, sp - 2)), null, GlanceModifier.size((sp - 2).dp))
+                Text("$prob%", maxLines = 1, style = TextStyle(color = rain, fontSize = sp.sp, fontWeight = FontWeight.Bold))
+            } else Text(" ", style = TextStyle(fontSize = sp.sp))
+        }
+        @androidx.compose.runtime.Composable fun alertChip(full: Boolean, sp: Int) {
             val a = s?.alert ?: return
             val bg = when (s.alertLevel) { 3 -> Color(0xFFE03C31); 2 -> Color(0xFFFF9F1C); else -> Color(0xFFFFD43B) }
             val fg = if (s.alertLevel >= 3) Color.White else Color(0xFF3A2A00)
-            Box(GlanceModifier.cornerRadius(8.dp).background(ColorProvider(bg)).padding(horizontal = 6.dp, vertical = 1.dp)) {
-                Text(if (full) "\u26A0\uFE0E $a" else "\u26A0\uFE0E", maxLines = 1, style = TextStyle(color = ColorProvider(fg), fontSize = 11.sp, fontWeight = FontWeight.Medium))
+            Box(GlanceModifier.cornerRadius(9.dp).background(ColorProvider(bg)).padding(horizontal = 7.dp, vertical = 2.dp)) {
+                Text(if (full) "⚠︎ $a" else "⚠︎", maxLines = 1, style = TextStyle(color = ColorProvider(fg), fontSize = sp.sp, fontWeight = FontWeight.Bold))
             }
         }
         @androidx.compose.runtime.Composable fun title(fontSp: Int, full: Boolean) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(s!!.name, maxLines = 1, style = TextStyle(color = ink, fontWeight = FontWeight.Medium, fontSize = fontSp.sp))
-                if (s.alert != null) { Spacer(GlanceModifier.width(6.dp)); alertChip(full) }
+                if (s.alert != null) { Spacer(GlanceModifier.width(8.dp)); alertChip(full, fontSp - 3) }
             }
         }
         @androidx.compose.runtime.Composable fun bigTemp(sp: Int) =
             Text("${s!!.temp ?: "—"}°", maxLines = 1, style = TextStyle(color = ink, fontSize = sp.sp, fontFamily = light))
         val maxMin = "↑${s?.max ?: "—"}°  ↓${s?.min ?: "—"}°"
-        @androidx.compose.runtime.Composable fun hours(n: Int, withTemps: Boolean) {
-            val hs = s!!.hourly.take(n)
-            val anyRain = hs.any { (it.prob ?: 0) > 0 }
-            Row(GlanceModifier.fillMaxWidth()) {
-                hs.forEach { h ->
-                    Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("%02d".format(h.hour), style = TextStyle(color = soft, fontSize = 11.sp))
-                        icon(h.sky, if (withTemps) 22 else 26)
-                        if (withTemps) Text("${h.temp}°", style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                        if (anyRain && withTemps) Text(h.prob?.takeIf { it > 0 }?.let { "$it%" } ?: " ", style = TextStyle(color = rain, fontSize = 10.sp))
-                    }
-                }
-            }
-        }
+        // La lluvia de ahora: la de la hora más próxima, para la cabecera.
+        val rainNow = s?.hourly?.firstOrNull()?.prob
 
         WidgetFrame(top, bottom, "aemet") {
-            if (s == null) { Text("Abre la app para cargar el tiempo", GlanceModifier.padding(12.dp), style = TextStyle(color = ink, fontSize = 12.sp)); return@WidgetFrame }
+            if (s == null) { Text("Abre la app para cargar el tiempo", GlanceModifier.padding(12.dp), style = TextStyle(color = ink, fontSize = 14.sp)); return@WidgetFrame }
             when {
-                large -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                    title(15, true)
+                large -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    title(17, true)
                     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        bigTemp(54)
+                        bigTemp(58)
                         Column(GlanceModifier.defaultWeight().padding(start = 10.dp)) {
-                            Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 13.sp))
-                            Text(maxMin, style = TextStyle(color = soft, fontSize = 13.sp))
-                            Row(GlanceModifier) {
-                                s.humidity?.let { glyph("drop", "$it%") }
+                            Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Medium))
+                            Text(maxMin, style = TextStyle(color = soft, fontSize = 15.sp))
+                            Row(GlanceModifier, verticalAlignment = Alignment.CenterVertically) {
+                                s.humidity?.let { glyph("drop", "$it%", 14) }
                                 if (s.humidity != null && s.windKmh != null) Spacer(GlanceModifier.width(10.dp))
-                                s.windKmh?.let { glyph("wind", "$it km/h") }
+                                s.windKmh?.let { glyph("wind", "$it km/h", 14) }
                             }
                         }
-                        icon(s.sky, 64)
+                        icon(s.sky, 70)
                     }
-                    Spacer(GlanceModifier.height(4.dp))
-                    // Las horas: hora e icono, y debajo la curva con la temperatura de cada una.
+                    // Las horas: hora e icono; debajo la curva con su temperatura y la lluvia al pie.
                     val hs = s.hourly.take(6)
-                    hours(6, withTemps = false)
-                    if (hs.isNotEmpty()) Image(ImageProvider(hourCurve(context, hs.map { it.temp }, size.width.value.roundToInt() - 32, 40, inkArgb)), null,
-                        GlanceModifier.fillMaxWidth().height(40.dp), contentScale = androidx.glance.layout.ContentScale.FillBounds)
-                    if (hs.any { (it.prob ?: 0) > 0 }) Row(GlanceModifier.fillMaxWidth()) {
-                        hs.forEach { h -> Text(h.prob?.takeIf { it > 0 }?.let { "$it%" } ?: "", GlanceModifier.defaultWeight(),
-                            style = TextStyle(color = rain, fontSize = 10.sp, textAlign = TextAlign.Center)) }
+                    Row(GlanceModifier.fillMaxWidth()) {
+                        hs.forEach { h ->
+                            Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("%02d".format(h.hour), style = TextStyle(color = soft, fontSize = 13.sp))
+                                icon(h.sky, 30)
+                            }
+                        }
                     }
+                    val curveH = if (hs.any { (it.prob ?: 0) > 0 }) 86 else 50
+                    if (hs.isNotEmpty()) Image(ImageProvider(hourCurve(context, hs.map { it.temp }, hs.map { it.prob }, size.width.value.roundToInt() - 32, curveH, inkArgb, rainArgb)), null,
+                        GlanceModifier.fillMaxWidth().height(curveH.dp), contentScale = androidx.glance.layout.ContentScale.FillBounds)
                     if (s.daily.isNotEmpty()) {
                         Spacer(GlanceModifier.height(6.dp))
                         Box(GlanceModifier.fillMaxWidth().height(1.dp).background(ColorProvider(inkColor.copy(alpha = 0.22f)))) {}
@@ -311,54 +329,69 @@ class WeatherWidget : GlanceAppWidget() {
                             val date = runCatching { java.time.LocalDate.parse(d.date) }.getOrNull()
                             val label = if (date == now) "Hoy" else date?.format(java.time.format.DateTimeFormatter.ofPattern("EEE", es.altamirano.tiempo.core.I18n.locale()))?.replaceFirstChar { it.titlecase() }?.trimEnd('.') ?: ""
                             Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(label, GlanceModifier.width(40.dp), maxLines = 1, style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                                icon(d.sky, 24)
-                                Text(d.prob?.takeIf { it > 0 }?.let { "$it%" } ?: "", GlanceModifier.width(38.dp).padding(start = 4.dp), style = TextStyle(color = rain, fontSize = 11.sp))
-                                Text("${d.min ?: "—"}°", GlanceModifier.width(30.dp), style = TextStyle(color = soft, fontSize = 13.sp, textAlign = TextAlign.End))
+                                Text(label, GlanceModifier.width(46.dp), maxLines = 1, style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Medium))
+                                icon(d.sky, 26)
+                                Box(GlanceModifier.width(52.dp).padding(start = 6.dp)) { rainMark(d.prob, 13) }
+                                Text("${d.min ?: "—"}°", GlanceModifier.width(32.dp), style = TextStyle(color = soft, fontSize = 15.sp, textAlign = TextAlign.End))
                                 Spacer(GlanceModifier.width(8.dp))
                                 if (d.min != null && d.max != null) Image(ImageProvider(dayBar(context, d.min.toDouble(), d.max.toDouble(), wMin, wMax, track, 110)), null,
-                                    GlanceModifier.defaultWeight().height(5.dp), contentScale = androidx.glance.layout.ContentScale.FillBounds)
+                                    GlanceModifier.defaultWeight().height(6.dp), contentScale = androidx.glance.layout.ContentScale.FillBounds)
                                 else Spacer(GlanceModifier.defaultWeight())
-                                Text("${d.max ?: "—"}°", GlanceModifier.width(34.dp), style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.End))
+                                Text("${d.max ?: "—"}°", GlanceModifier.width(38.dp), style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End))
                             }
                         } }
                     }
                 }
-                medium -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                medium -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(GlanceModifier.defaultWeight()) {
                             title(14, true)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 bigTemp(40)
-                                Column(GlanceModifier.padding(start = 8.dp)) {
-                                    Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 12.sp))
-                                    Text(maxMin, maxLines = 1, style = TextStyle(color = soft, fontSize = 12.sp))
-                                    Row(GlanceModifier) {
-                                        s.humidity?.let { glyph("drop", "$it%") }
+                                Column(GlanceModifier.padding(start = 10.dp)) {
+                                    Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium))
+                                    Text(maxMin, maxLines = 1, style = TextStyle(color = soft, fontSize = 14.sp))
+                                    Row(GlanceModifier, verticalAlignment = Alignment.CenterVertically) {
+                                        s.humidity?.let { glyph("drop", "$it%", 13) }
                                         if (s.humidity != null && s.windKmh != null) Spacer(GlanceModifier.width(8.dp))
-                                        s.windKmh?.let { glyph("wind", "$it km/h") }
+                                        s.windKmh?.let { glyph("wind", "$it km/h", 13) }
                                     }
                                 }
                             }
                         }
-                        icon(s.sky, 52)
+                        icon(s.sky, 58)
                     }
                     Spacer(GlanceModifier.defaultWeight())
-                    hours(5, withTemps = true)
+                    val hs = s.hourly.take(5)
+                    val anyRain = hs.any { (it.prob ?: 0) > 0 }
+                    Row(GlanceModifier.fillMaxWidth()) {
+                        hs.forEach { h ->
+                            Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("%02d".format(h.hour), style = TextStyle(color = soft, fontSize = 11.sp))
+                                icon(h.sky, 26)
+                                Text("${h.temp}°", style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold))
+                                if (anyRain) rainMark(h.prob, 11)
+                            }
+                        }
+                    }
                 }
-                else -> Column(GlanceModifier.fillMaxSize().padding(14.dp)) {
-                    title(13, false)
+                else -> Column(GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    title(15, false)
                     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Box(GlanceModifier.defaultWeight()) { bigTemp(44) }
-                        icon(s.sky, 48)
+                        bigTemp(52)
+                        Spacer(GlanceModifier.defaultWeight())
+                        icon(s.sky, 56)
                     }
-                    Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 12.sp))
+                    Text(s.skyText ?: "", maxLines = 1, style = TextStyle(color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium))
                     Spacer(GlanceModifier.defaultWeight())
-                    Text(maxMin, style = TextStyle(color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium))
-                    Row(GlanceModifier) {
-                        s.humidity?.let { glyph("drop", "$it%") }
-                        if (s.humidity != null && s.windKmh != null) Spacer(GlanceModifier.width(8.dp))
-                        s.windKmh?.let { glyph("wind", "$it") }
+                    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(maxMin, GlanceModifier.defaultWeight(), maxLines = 1, style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Medium))
+                        if ((rainNow ?: 0) > 0) rainMark(rainNow, 14)
+                    }
+                    Row(GlanceModifier, verticalAlignment = Alignment.CenterVertically) {
+                        s.humidity?.let { glyph("drop", "$it%", 13) }
+                        if (s.humidity != null && s.windKmh != null) Spacer(GlanceModifier.width(10.dp))
+                        s.windKmh?.let { glyph("wind", "$it km/h", 13) }
                     }
                 }
             }

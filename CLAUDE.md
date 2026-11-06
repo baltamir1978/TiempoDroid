@@ -7,7 +7,11 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.3: compila y pasan 34 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.3.apk`.
+**0.3.4: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.4.apk`.
+0.3.4: la gráfica de temperatura de la app rehecha como la de iOS (curva suave naranja, eje de
+grados, lluvia en barras en su franja, horas alineadas con sus puntos: antes se descuadraban
+hasta 5 h); widget de Tiempo con letra e iconos más grandes y la lluvia marcada en azul con su
+gota (en el grande, barras con su porcentaje bajo la curva).
 0.3.3: widgets rehechos con el aire de Breezy Weather: iconos del tiempo dibujados por nosotros
 (`widget/WeatherIcons.kt`: sol, luna en su fase, nubes, gotas, copos, rayo, niebla; nada de
 emojis), temperatura grande en letra fina, el aviso como etiqueta y en el grande la curva de seis
@@ -16,8 +20,9 @@ estación y hora: hay que deduplicar), «AEMET no disponible: …» en la págin
 Ajustes comprueba la clave y dice cuándo caduca (si la de Ajustes caduca antes que la del APK,
 manda la del APK).
 
-**Ver los widgets sin móvil:** `./gradlew testDebugUnitTest --tests '*WidgetRender*'
--Dwidgets.out=<carpeta>` los pinta a PNG (Robolectric, Glance → RemoteViews). Las esquinas salen
+**Ver los widgets sin móvil:** `./gradlew testDebugUnitTest --tests '*WidgetRender*' --tests '*ChartRender*'
+-Dwidgets.out=<carpeta>` los pinta a PNG, y la gráfica de la app (`captureToImage` se cuelga en
+Robolectric: se pinta la vista a mano) (Robolectric, Glance → RemoteViews). Las esquinas salen
 rectas y las fechas en inglés sólo ahí.
 
 Hecho, traducido de la app de iOS:

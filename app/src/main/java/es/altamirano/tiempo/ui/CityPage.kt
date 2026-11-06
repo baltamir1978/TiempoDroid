@@ -16,6 +16,7 @@ import es.altamirano.tiempo.core.ObsRecord
 import es.altamirano.tiempo.data.WeatherRepo
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.drawText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -315,31 +316,78 @@ private fun HourlyCard(hours: List<HourEntry>) {
     }
 }
 
-/** La curva de las próximas horas, con barras de lluvia debajo (al estilo de Breezy). */
+/**
+ * La curva de las próximas horas (`tempChartCard` de iOS): línea naranja suave con su área, eje de
+ * grados con cuatro líneas, y la probabilidad de lluvia en barras azules en una franja propia por
+ * debajo de la curva (`floor`…`barCeil`), con las horas debajo alineadas con sus puntos.
+ */
 @Composable
-private fun TempChart(hours: List<HourEntry>) {
-    val tMin = hours.minOf { it.temp }; val tMax = hours.maxOf { it.temp }
-    val lo = tMin - 1; val hi = tMax + 1
-    val line = MaterialTheme.colorScheme.primary
-    val rainColor = Color(0xFF007AFF).copy(alpha = 0.45f)
+internal fun TempChart(hours: List<HourEntry>) {
+    if (hours.size < 3) return
+    val temps = hours.map { it.temp }
+    val tMin = temps.min(); val tMax = temps.max()
+    val span = maxOf(tMax - tMin, 1.0)
+    val floor = tMin - span * 0.5            // abajo del todo: la franja de la lluvia
+    val barCeil = tMin - span * 0.08         // hasta donde llega una barra del 100 %
+    val top = tMax + span * 0.12
+    val hasRain = hours.any { (it.prob ?: 0) > 0 }
+    val tickStep = maxOf(1, hours.size / 6)
+    val orange = Color(0xFFFF9500)
+    val rain = Color(0xFF007AFF).copy(alpha = 0.40f)
+    val grid = MaterialTheme.colorScheme.outlineVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val labelStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, color = labelColor)
+    // Las marcas del eje: un paso «redondo» (1, 2, 5, 10…) que dé unas cuatro líneas.
+    val step = listOf(1.0, 2.0, 5.0, 10.0, 20.0).firstOrNull { (top - floor) / it <= 4.5 } ?: 20.0
+    val ticks = generateSequence(Math.ceil(floor / step) * step) { it + step }.takeWhile { it <= top }
+        .filter { it >= tMin - span * 0.05 }.toList()
     Card {
         Column {
-            CardTitle("Temperatura próximas horas", "${tMin.roundToInt()}° / ${tMax.roundToInt()}°")
-            Canvas(Modifier.fillMaxWidth().height(110.dp).padding(start = 16.dp, end = 16.dp, bottom = 4.dp)) {
-                val n = hours.size; val step = size.width / (n - 1)
-                hours.forEachIndexed { i, h ->
-                    val p = (h.prob ?: 0) / 100f
-                    if (p > 0) drawRect(rainColor, Offset(i * step - step * 0.3f, size.height - p * size.height * 0.4f), Size(step * 0.6f, p * size.height * 0.4f))
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Temperatura próximas horas", Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                if (hasRain) {
+                    Box(Modifier.size(7.dp, 9.dp).background(rain, androidx.compose.foundation.shape.RoundedCornerShape(1.dp)))
+                    Text(" lluvia   ", fontSize = 11.sp, color = labelColor)
                 }
-                val path = Path()
-                hours.forEachIndexed { i, h ->
-                    val x = i * step; val y = (size.height * 0.85f) - ((h.temp - lo) / (hi - lo)).toFloat() * size.height * 0.75f
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                }
-                drawPath(path, Brush.horizontalGradient(listOf(Color(0xFF32ADE6), line, Sun)), style = Stroke(3.dp.toPx()))
+                Text("${tMin.roundToInt()}° / ${tMax.roundToInt()}°", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = labelColor)
             }
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                hours.filterIndexed { i, _ -> i % 6 == 0 }.forEach { Text("%02dh".format(it.hour), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Canvas(Modifier.fillMaxWidth().height(150.dp).padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)) {
+                val axisW = 30.dp.toPx()                     // los grados, a la izquierda
+                val xLabelH = 16.dp.toPx()                   // las horas, abajo
+                val plotW = size.width - axisW; val plotH = size.height - xLabelH
+                fun x(i: Int) = axisW + plotW * i / (hours.size - 1)
+                fun y(t: Double) = (plotH * (1 - (t - floor) / (top - floor))).toFloat()
+                for (t in ticks) {
+                    val yy = y(t)
+                    drawLine(grid, Offset(axisW, yy), Offset(size.width, yy), strokeWidth = 1.dp.toPx())
+                    val lay = measurer.measure("${t.roundToInt()}°", labelStyle)
+                    drawText(lay, topLeft = Offset(axisW - lay.size.width - 6.dp.toPx(), yy - lay.size.height / 2f))
+                }
+                // Curva suave (Catmull-Rom pasada a Bézier, como `.catmullRom` en iOS).
+                val pts = hours.indices.map { Offset(x(it), y(temps[it])) }
+                val line = Path().apply {
+                    moveTo(pts[0].x, pts[0].y)
+                    for (i in 0 until pts.size - 1) {
+                        val p0 = pts[maxOf(i - 1, 0)]; val p1 = pts[i]; val p2 = pts[i + 1]; val p3 = pts[minOf(i + 2, pts.size - 1)]
+                        cubicTo(p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6, p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6, p2.x, p2.y)
+                    }
+                }
+                val area = Path().apply { addPath(line); lineTo(pts.last().x, plotH); lineTo(pts.first().x, plotH); close() }
+                drawPath(area, Brush.verticalGradient(listOf(orange.copy(alpha = 0.28f), orange.copy(alpha = 0.02f)), startY = y(tMax), endY = plotH))
+                drawPath(line, orange, style = Stroke(2.5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                // La lluvia encima del área, en su franja, sin tocar la curva.
+                hours.forEachIndexed { i, h ->
+                    val p = h.prob ?: 0
+                    if (p > 0) drawLine(rain, Offset(x(i), y(floor)), Offset(x(i), y(floor + (barCeil - floor) * p / 100.0)),
+                        strokeWidth = 5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                }
+                // Las horas, cada una bajo su punto (centrada, sin salirse por los bordes).
+                for (i in hours.indices step tickStep) {
+                    val lay = measurer.measure("%02dh".format(hours[i].hour), labelStyle)
+                    val lx = (x(i) - lay.size.width / 2f).coerceIn(axisW - lay.size.width / 2f, size.width - lay.size.width.toFloat())
+                    drawText(lay, topLeft = Offset(lx, plotH + 3.dp.toPx()))
+                }
             }
         }
     }
