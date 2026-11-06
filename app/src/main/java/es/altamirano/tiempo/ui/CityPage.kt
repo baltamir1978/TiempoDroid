@@ -83,7 +83,7 @@ private val Spanish: Locale get() = es.altamirano.tiempo.core.I18n.locale()
 fun CityPage(loc: SavedLocation, w: CityWeather) {
     val now = LocalDateTime.now(loc.zone)
     val hours = w.hourly.nextHours(now)
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = gutter(), vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (w.alerts.isNotEmpty()) item { Alerts(w, loc.zone) }
         if (!w.hasData) item {
             Card {

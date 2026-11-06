@@ -52,6 +52,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.material.icons.filled.Cloud
@@ -178,26 +180,19 @@ private fun Root() {
     if (tab == TAB_ACTUAL && !netatmoOn) tab = TAB_WEATHER
     // Sin clave de AEMET todo sale de Open-Meteo: la pestaña se llama «Tiempo», no «AEMET».
     val aemetKey by app.settings.aemetKey.collectAsStateWithLifecycle()
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, bottomBar = {
-        NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-            listOfNotNull(Triple(if (aemetKey.isNotBlank()) "AEMET" else "Tiempo", Icons.Filled.Cloud, TAB_WEATHER),
-                Triple("Sol·Luna", Icons.Filled.Brightness4, TAB_COSMOS),
-                // La pestaña de Netatmo sólo sale con Netatmo configurado, al final de la barra.
-                if (netatmoOn) Triple("Actual", Icons.Filled.Thermostat, TAB_ACTUAL) else null,
-                Triple("Ajustes", Icons.Filled.Settings, TAB_SETTINGS)).forEach { (label, icon, i) ->
-                NavigationBarItem(tab == i, { tab = i }, { Icon(icon, null) }, label = { Text(label) },
-                    colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primaryContainer))
-            }
-        }
-    }) { padding ->
-        Box(Modifier.padding(bottom = padding.calculateBottomPadding()).fillMaxSize()) {
-            when (tab) {
-                TAB_WEATHER -> WeatherTab(page) { page = it }
-                TAB_COSMOS -> CosmosTab(page, tidesSignal)
-                TAB_ACTUAL -> ActualTab()
-                else -> SettingsTab()
-            }
+    val items = listOfNotNull(Triple(if (aemetKey.isNotBlank()) "AEMET" else "Tiempo", Icons.Filled.Cloud, TAB_WEATHER),
+        Triple("Sol·Luna", Icons.Filled.Brightness4, TAB_COSMOS),
+        // La pestaña de Netatmo sólo sale con Netatmo configurado, al final de la barra.
+        if (netatmoOn) Triple("Actual", Icons.Filled.Thermostat, TAB_ACTUAL) else null,
+        Triple("Ajustes", Icons.Filled.Settings, TAB_SETTINGS)).map { (label, icon, i) ->
+        NavItem(tab == i, { tab = i }, { Icon(icon, null) }, { Text(label) })
+    }
+    AdaptiveNavigation(items) {
+        when (tab) {
+            TAB_WEATHER -> WeatherTab(page) { page = it }
+            TAB_COSMOS -> CosmosTab(page, tidesSignal)
+            TAB_ACTUAL -> ActualTab()
+            else -> SettingsTab()
         }
     }
 }
@@ -234,12 +229,20 @@ private fun WeatherTab(initialPage: Int, onPage: (Int) -> Unit) {
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.padding(top = 3.dp)) {
                         all.indices.forEach { i ->
                             Box(Modifier.size(6.dp).clip(CircleShape).background(if (i == pager.currentPage) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)))
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                                .clickable { scope.launch { pager.animateScrollToPage(i) } })
                         }
                     }
                 }
             },
             actions = {
+                // Con ratón no se pasa de página con el dedo: flechas.
+                if (isWide() && all.size > 1) {
+                    IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } }, enabled = pager.currentPage > 0) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Anterior") }
+                    IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } }, enabled = pager.currentPage < all.lastIndex) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Siguiente") }
+                }
                 IconButton(onClick = { scope.launch { app.snapshots.save(loc, app.weather.load(loc, force = true)) } }) { Icon(Icons.Filled.Refresh, "Actualizar") }
                 IconButton(onClick = { manage = true }) { Icon(Icons.Filled.FormatListBulleted, "Ciudades") }
             },
@@ -267,9 +270,9 @@ private fun LocationsSheet(onClose: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("Ciudades", fontWeight = FontWeight.Bold) }, actions = { TextButton(onClick = onClose) { Text("Listo") } },
             expandedHeight = 48.dp, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(16.dp, 4.dp), singleLine = true,
+        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = gutter(), vertical = 4.dp), singleLine = true,
             placeholder = { Text("Buscar municipio o pueblo") }, leadingIcon = { Icon(Icons.Filled.Search, null) }, shape = RoundedCornerShape(12.dp))
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = gutter(0.dp))) {
             if (query.isBlank()) {
                 items(saved, key = { LocationStore.keyOf(it) }) { l ->
                     ListItem(headlineContent = { Text(l.name) }, supportingContent = l.province?.let { { Text(it) } },
@@ -340,7 +343,7 @@ private fun CosmosTab(page: Int, tidesSignal: Int = 0) {
     LaunchedEffect(port, day) { tides = runCatching { app.tides.days(port, day) }.getOrDefault(emptyList()) }
     fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
 
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState, contentPadding = PaddingValues(horizontal = gutter(), vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("Sol·Luna · ${loc.name}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -557,7 +560,7 @@ private fun SettingsTab() {
     val scale by app.settings.tempScale.collectAsStateWithLifecycle()
     var draft by remember(key) { mutableStateOf(key) }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(horizontal = gutter(), vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("Ajustes", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item {
             Card {

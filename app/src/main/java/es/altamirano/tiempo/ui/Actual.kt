@@ -114,7 +114,7 @@ fun ActualTab() {
                 else IconButton(onClick = { scope.launch { app.netatmo.load(force = true); app.snapshots.requestUpdate() } }) { Icon(Icons.Filled.Refresh, "Actualizar") }
             },
             expandedHeight = 48.dp, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background, actionIconContentColor = MaterialTheme.colorScheme.primary))
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = gutter(0.dp), end = gutter(0.dp), bottom = 24.dp)) {
             item { Header(st.station?.stationName ?: app.netatmo.stationLocation, app.netatmo.stationLocation, st.station?.reachable == true) }
             st.error?.let { item { Text(it, Modifier.padding(16.dp), fontSize = 12.sp, color = Color(0xFFFF3B30)) } }
             val s = st.station ?: return@LazyColumn
@@ -247,7 +247,7 @@ private fun ChartScreen(source: ChartSource, type: String, onBack: () -> Unit) {
         TopAppBar(title = { Text(NetatmoCharts.title(source, type), fontWeight = FontWeight.Bold) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
             expandedHeight = 48.dp, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
-        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(horizontal = gutter(), vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
                 Text("PERIODO", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.5.sp)
                 Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
