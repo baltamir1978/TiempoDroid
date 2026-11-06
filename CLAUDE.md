@@ -7,7 +7,7 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.1: compila y pasan 30 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.1.apk`.
+**0.3.1: compila y pasan 30 pruebas; sin probar en el móvil.** Clave de AEMET nueva (6-nov). APK en `~/Documentos/Tiempo-0.3.1.apk`.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
@@ -66,8 +66,8 @@ Hecho, traducido de la app de iOS:
 
 Falta: probar en el móvil (todo, y la sesión compartida con Calefacción con una cuenta de verdad).
 
-**La clave de AEMET de Bruno caducó** (había que renovarla antes del 15-oct-2026): AEMET contesta
-401 a todo. Mientras no la renueve en opendata.aemet.es, la app tira de Open-Meteo. Va en
+**Clave de AEMET renovada el 6-nov-2026; caduca el 14-feb-2027** (la fecha va en el `exp` del JWT).
+Cuando caduca, AEMET contesta 401 a todo y la app tira de Open-Meteo. Va en
 `local.properties` (`aemet.apiKey`), nunca en el repo, o en Ajustes dentro de la app.
 
 ## La especificación es el original
