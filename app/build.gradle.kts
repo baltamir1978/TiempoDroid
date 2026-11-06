@@ -22,8 +22,8 @@ android {
         applicationId = "es.altamirano.tiempo"
         minSdk = 31          // Android 12
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.3.6"
+        versionCode = 10
+        versionName = "0.3.7"
         buildConfigField("String", "AEMET_API_KEY", localString("aemet.apiKey"))
         // Netatmo (como `Secrets.swift` en iOS): sólo hace falta si no se usa la sesión de Calefacción.
         buildConfigField("String", "NETATMO_CLIENT_ID", localString("netatmo.clientId"))

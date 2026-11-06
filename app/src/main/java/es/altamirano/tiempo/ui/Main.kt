@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -242,7 +243,7 @@ private fun WeatherTab(initialPage: Int, onPage: (Int) -> Unit) {
                 IconButton(onClick = { scope.launch { app.snapshots.save(loc, app.weather.load(loc, force = true)) } }) { Icon(Icons.Filled.Refresh, "Actualizar") }
                 IconButton(onClick = { manage = true }) { Icon(Icons.Filled.FormatListBulleted, "Ciudades") }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background, actionIconContentColor = MaterialTheme.colorScheme.primary),
+            expandedHeight = 48.dp, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background, actionIconContentColor = MaterialTheme.colorScheme.primary),
         )
         HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { i ->
             val l = all[i]
@@ -265,7 +266,7 @@ private fun LocationsSheet(onClose: () -> Unit) {
     LaunchedEffect(query) { results = withContext(Dispatchers.Default) { app.places.search(query) } }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("Ciudades", fontWeight = FontWeight.Bold) }, actions = { TextButton(onClick = onClose) { Text("Listo") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
+            expandedHeight = 48.dp, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
         OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(16.dp, 4.dp), singleLine = true,
             placeholder = { Text("Buscar municipio o pueblo") }, leadingIcon = { Icon(Icons.Filled.Search, null) }, shape = RoundedCornerShape(12.dp))
         LazyColumn(Modifier.fillMaxSize()) {
@@ -339,8 +340,8 @@ private fun CosmosTab(page: Int, tidesSignal: Int = 0) {
     LaunchedEffect(port, day) { tides = runCatching { app.tides.days(port, day) }.getOrDefault(emptyList()) }
     fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
 
-    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { Text("Sol·Luna · ${loc.name}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp)) }
+    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { Text("Sol·Luna · ${loc.name}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { picking = true }) {
@@ -413,7 +414,7 @@ private fun MoonCalendar(today: LocalDate, zone: ZoneId, phases: List<PhaseEvent
                 cells.chunked(7).forEach { week ->
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         (week + List(7 - week.size) { null }).forEach { d ->
-                            Box(Modifier.weight(1f).height(40.dp)) {
+                            Box(Modifier.weight(1f).height(44.dp)) {
                                 if (d != null) {
                                     val ph = phaseByDay[d]; val evs = eventsByDay[d].orEmpty()
                                     val isSel = d == selected
@@ -426,9 +427,9 @@ private fun MoonCalendar(today: LocalDate, zone: ZoneId, phases: List<PhaseEvent
                                         .clickable { onSelect(if (isSel) null else d) }
                                         .alpha(if (d < today && !isSel) 0.45f else 1f),
                                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                        Text("${d.dayOfMonth}", fontSize = 12.sp, fontWeight = if (has) FontWeight.Bold else null,
+                                        Text("${d.dayOfMonth}", fontSize = 12.sp, lineHeight = 15.sp, fontWeight = if (has) FontWeight.Bold else null,
                                             color = if (has) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(ph?.emoji ?: evs.firstOrNull()?.emoji ?: " ", fontSize = 11.sp)
+                                        Text(ph?.emoji ?: evs.firstOrNull()?.emoji ?: " ", fontSize = 12.sp, lineHeight = 17.sp)
                                     }
                                     if (ph != null && evs.isNotEmpty()) Box(Modifier.align(Alignment.TopEnd).padding(3.dp).size(5.dp).clip(CircleShape).background(Green))
                                 }
@@ -556,8 +557,8 @@ private fun SettingsTab() {
     val scale by app.settings.tempScale.collectAsStateWithLifecycle()
     var draft by remember(key) { mutableStateOf(key) }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { Text("Ajustes", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp)) }
+    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { Text("Ajustes", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item {
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

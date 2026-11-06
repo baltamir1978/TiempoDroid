@@ -7,7 +7,8 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (6-nov-2026)
 
-**0.3.6: compila y pasan 35 pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.6.apk`.
+**0.3.7: compila y pasan 35 pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.7.apk`.
+0.3.7: cabeceras a la misma altura en todas las pestañas (Sol·Luna y Ajustes bajo la barra de estado; las barras de título, de 48 dp en vez de 64) y el calendario lunar sin iconos cortados (el `lineHeight` de 24 sp por omisión no cabía en la celda).
 0.3.6: los widgets hacen caso a la ciudad o el puerto elegidos al ponerlos (ver «Trampas de Glance»).
 0.3.5: el icono principal del widget de Tiempo, grande y superpuesto en la esquina (no empuja
 las horas); Netatmo, Sol·Luna y Mareas rehechos con letra fina grande, anillos e iconos mayores y
