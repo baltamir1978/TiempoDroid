@@ -526,7 +526,9 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val app = applicationContext.app
         val gm = GlanceAppWidgetManager(applicationContext)
         val ids = runCatching { gm.getGlanceIds(WeatherWidget::class.java) }.getOrDefault(emptyList())
-        val keys = ids.mapNotNull { app.settings.widgetCity(gm.getAppWidgetId(it)) }.toSet()
+        // Sin ciudad guardada, la primera (la ubicación actual), como en `provideGlance`.
+        val first = app.locations.all().firstOrNull()?.let { LocationStore.keyOf(it) }
+        val keys = ids.mapNotNull { app.settings.widgetCity(gm.getAppWidgetId(it)) ?: first }.toSet()
         for (key in keys) {
             var loc = app.locations.byKey(key) ?: continue
             if (loc.isCurrent) loc = app.locations.locate() ?: loc

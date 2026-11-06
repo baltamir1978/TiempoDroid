@@ -212,8 +212,11 @@ private fun WeatherTab(initialPage: Int, onPage: (Int) -> Unit) {
         if (ok) scope.launch { app.locations.locate()?.let { l -> app.snapshots.save(l, app.weather.load(l)) } }
     }
 
+    // Al localizar se guarda también lo del widget: si la página de la ubicación actual no está a
+    // la vista (o sigue en el mismo municipio), nadie más lo haría y el widget seguiría en el sitio de antes.
     LaunchedEffect(Unit) {
-        if (app.locations.hasPermission()) app.locations.locate() else askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (app.locations.hasPermission()) app.locations.locate()?.let { l -> app.snapshots.save(l, app.weather.load(l)) }
+        else askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
     }
     if (manage) { BackHandler { manage = false }; LocationsSheet { manage = false }; return }
     if (all.isEmpty()) return
@@ -253,7 +256,8 @@ private fun WeatherTab(initialPage: Int, onPage: (Int) -> Unit) {
             val key = LocationStore.keyOf(l)
             val w = pages[key] ?: remember(key) { app.weather.primed(l) }
             // Cada página carga la suya (y la de al lado se prepara por adelantado).
-            LaunchedEffect(key, l.municipio) { if (!w.loading) app.snapshots.save(l, app.weather.load(l)) }
+            // Con el nombre: de San Blas a Fuencarral el municipio es el mismo (Madrid) y el widget no se enteraba.
+            LaunchedEffect(key, l.municipio, l.name) { if (!w.loading) app.snapshots.save(l, app.weather.load(l)) }
             CityPage(l, w)
         }
     }

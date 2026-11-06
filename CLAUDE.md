@@ -7,7 +7,8 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (6-nov-2026)
 
-**0.3.10: compila y pasan las pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.10.apk`.
+**0.3.11: compila y pasan las pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.11.apk`.
+0.3.11: el widget de la ubicación actual se quedaba en el sitio de antes (San Blas-Canillejas con la app ya en Fuencarral): la página sólo volvía a guardar lo del widget si cambiaba el municipio, y los dos distritos son Madrid. Ahora también si cambia el nombre, y al localizar al abrir la app se guarda siempre (antes sólo al conceder el permiso). Sin probar en el móvil.
 0.3.10: **modo escritorio**: en ventana ancha (modo escritorio, tableta) el contenido se centra a 720 dp con el margen como `contentPadding` (la rueda del ratón desplaza también sobre él), y la actividad no se recrea al redimensionar (`configChanges`). Piezas en `ui/Adaptive.kt`; sin probar en modo escritorio de verdad. En ventana ancha, riel a la izquierda en vez de barra inferior (`AdaptiveNavigation`) y flechas para pasar de ciudad (los puntos también se pueden tocar). `DesktopRender` pinta la página de una ciudad a 1280×800 dp como los widgets.
 0.3.9: la configuración del widget ya no queda bajo la barra de estado y la cámara (`safeDrawingPadding`: con targetSdk 35 todo va de borde a borde).
 0.3.8: en la configuración de cada widget, el interruptor «Color según la temperatura» se guarda al
