@@ -7,6 +7,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -123,10 +125,13 @@ class NetatmoWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.app
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val snap = app.netatmo.snapshot()
-        val tempBg = app.settings.widgetTempBackground(widgetId, default = false)
-        val scale = app.settings.tempScale.value
-        provideContent { Content(context, snap, tempBg, scale) }
+        provideContent {
+            val stamp = widgetStamp()
+            val (snap, tempBg, scale) = androidx.compose.runtime.remember(stamp) {
+                Triple(app.netatmo.snapshot(), app.settings.widgetTempBackground(widgetId, default = false), app.settings.tempScale.value)
+            }
+            Content(context, snap, tempBg, scale)
+        }
     }
 
     @Composable
@@ -258,22 +263,29 @@ class SunMoonWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.app
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val key = app.settings.widgetCity(widgetId)
-        val loc = key?.let { app.locations.byKey(it) } ?: app.locations.all().first()
-        val zone = loc.zone
-        val now = Instant.now()
-        val today = LocalDate.now(zone)
-        val sun = SunMoon.sun(today, loc.lat, loc.lon, zone)
-        val moon = SunMoon.moon(today, loc.lat, loc.lon, zone, now)
-        val next = SunMoon.nextPhases(now, 1).firstOrNull()
-        fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
-        val nextWhen = next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", es.altamirano.tiempo.core.I18n.locale()))
-        val daylight = sun.daylightMinutes?.let { "${it / 60} h ${"%02d".format(it % 60)} min" }
         provideContent {
-            Content(context, loc.name, t(sun.sunrise), t(sun.sunset), t(moon.rise), t(moon.set), moon.ageDays / 29.530588853,
-                moon.illumination, moon.phase.label, next?.first, nextWhen, daylight)
+            // Dentro y según el sello: así hace caso a la ciudad elegida al ponerlo o editarlo.
+            val stamp = widgetStamp()
+            val p = androidx.compose.runtime.remember(stamp) {
+                val loc = app.settings.widgetCity(widgetId)?.let { app.locations.byKey(it) } ?: app.locations.all().first()
+                val zone = loc.zone
+                val now = Instant.now()
+                val today = LocalDate.now(zone)
+                val sun = SunMoon.sun(today, loc.lat, loc.lon, zone)
+                val moon = SunMoon.moon(today, loc.lat, loc.lon, zone, now)
+                val next = SunMoon.nextPhases(now, 1).firstOrNull()
+                fun t(i: Instant?) = i?.atZone(zone)?.format(hhmm) ?: "—"
+                SunMoonData(loc.name, t(sun.sunrise), t(sun.sunset), t(moon.rise), t(moon.set), moon.ageDays / 29.530588853,
+                    moon.illumination, moon.phase.label, next?.first,
+                    next?.second?.atZone(zone)?.format(DateTimeFormatter.ofPattern("d MMM · HH:mm", es.altamirano.tiempo.core.I18n.locale())),
+                    sun.daylightMinutes?.let { "${it / 60} h ${"%02d".format(it % 60)} min" })
+            }
+            Content(context, p.place, p.rise, p.set, p.moonRise, p.moonSet, p.cycle, p.illumination, p.label, p.next, p.nextWhen, p.daylight)
         }
     }
+
+    private data class SunMoonData(val place: String, val rise: String, val set: String, val moonRise: String, val moonSet: String, val cycle: Double,
+                                   val illumination: Double, val label: String, val next: es.altamirano.tiempo.core.MoonPhase?, val nextWhen: String?, val daylight: String?)
 
     /** La fase de una luna con nombre, en la fracción del ciclo que dibuja `WeatherIcons.moon`. */
     private fun phaseFraction(p: es.altamirano.tiempo.core.MoonPhase) = p.ordinal / 8.0
@@ -352,13 +364,24 @@ class TidesWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.app
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val portId = app.settings.widgetPort(widgetId) ?: app.settings.tidePort.value
-        val port = IHM_STATIONS.firstOrNull { it.id == portId } ?: IHM_STATIONS.first { it.id == "4" }
-        val zone = app.tides.zone(port)
-        val today = LocalDate.now(zone)
-        val tides = runCatching { app.tides.days(port, today.minusDays(1), 3) }.getOrDefault(emptyList()).flatMap { it.second }
-        val sun = SunMoon.sun(today, port.lat, port.lon, zone)
-        provideContent { Content(context, port.name, tides, zone, sun.sunrise, sun.sunset) }
+        fun port() = (app.settings.widgetPort(widgetId) ?: app.settings.tidePort.value).let { pid ->
+            IHM_STATIONS.firstOrNull { it.id == pid } ?: IHM_STATIONS.first { it.id == "4" } }
+        suspend fun load(p: es.altamirano.tiempo.core.TideStation): List<Tide> {
+            val today = LocalDate.now(app.tides.zone(p))
+            return runCatching { app.tides.days(p, today.minusDays(1), 3) }.getOrDefault(emptyList()).flatMap { it.second }
+        }
+        val first = port()
+        val firstTides = load(first)
+        provideContent {
+            // El puerto, dentro y según el sello (si no, no hacía caso al elegido al ponerlo); las mareas, en segundo plano.
+            val stamp = widgetStamp()
+            val p = androidx.compose.runtime.remember(stamp) { port() }
+            var tides by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(first.id to firstTides) }
+            androidx.compose.runtime.LaunchedEffect(stamp) { if (stamp != 0L) tides = p.id to load(p) }
+            val zone = app.tides.zone(p)
+            val sun = SunMoon.sun(LocalDate.now(zone), p.lat, p.lon, zone)
+            Content(context, p.name, if (tides.first == p.id) tides.second else emptyList(), zone, sun.sunrise, sun.sunset)
+        }
     }
 
     @Composable

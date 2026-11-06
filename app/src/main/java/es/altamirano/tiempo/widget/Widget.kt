@@ -228,11 +228,15 @@ class WeatherWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.app
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val key = app.settings.widgetCity(widgetId) ?: LocationStore.keyOf(app.locations.all().first())
-        val snap = app.snapshots.get(key)
-        val tempBg = app.settings.widgetTempBackground(widgetId)
-        val scale = app.settings.tempScale.value
-        provideContent { Content(context, snap, tempBg, scale) }
+        provideContent {
+            // Se lee dentro, según el sello: si no, un widget recién puesto se quedaba con lo de antes de configurarlo.
+            val stamp = widgetStamp()
+            val (snap, tempBg, scale) = androidx.compose.runtime.remember(stamp) {
+                val key = app.settings.widgetCity(widgetId) ?: LocationStore.keyOf(app.locations.all().first())
+                Triple(app.snapshots.get(key), app.settings.widgetTempBackground(widgetId), app.settings.tempScale.value)
+            }
+            Content(context, snap, tempBg, scale)
+        }
     }
 
     @androidx.compose.runtime.Composable
@@ -398,12 +402,28 @@ class WeatherWidget : GlanceAppWidget() {
 
 class WeatherWidgetReceiver : GlanceAppWidgetReceiver() { override val glanceAppWidget: GlanceAppWidget = WeatherWidget() }
 
+/**
+ * El sello de cada widget en su estado de Glance. `provideGlance` sólo corre al abrir la sesión, y
+ * la sesión sigue viva un rato: si el widget leyera sus ajustes ahí, al elegir ciudad o puerto
+ * justo después de ponerlo (o al refrescar mientras sigue viva) pintaría lo de antes. Cada widget
+ * lee sus datos dentro de la composición según este sello, y cada aviso lo cambia.
+ */
+private val WIDGET_STAMP = androidx.datastore.preferences.core.longPreferencesKey("sello")
+
+@androidx.compose.runtime.Composable
+fun widgetStamp(): Long = androidx.glance.currentState<androidx.datastore.preferences.core.Preferences>()[WIDGET_STAMP] ?: 0L
+
+/** Cambia el sello de un widget y lo repinta. */
+suspend fun refreshWidget(context: Context, widget: GlanceAppWidget, id: GlanceId) {
+    androidx.glance.appwidget.state.updateAppWidgetState(context, id) { it[WIDGET_STAMP] = System.nanoTime() }
+    widget.update(context, id)
+}
+
 /** Avisa a los cuatro widgets (agrupado por `WidgetSnapshots.requestUpdate`). */
 suspend fun updateAllWidgets(context: Context) {
-    runCatching { WeatherWidget().updateAll(context) }
-    runCatching { NetatmoWidget().updateAll(context) }
-    runCatching { SunMoonWidget().updateAll(context) }
-    runCatching { TidesWidget().updateAll(context) }
+    val gm = GlanceAppWidgetManager(context)
+    for (w in listOf(WeatherWidget(), NetatmoWidget(), SunMoonWidget(), TidesWidget()))
+        runCatching { gm.getGlanceIds(w.javaClass).forEach { id -> runCatching { refreshWidget(context, w, id) } } }
 }
 
 /**

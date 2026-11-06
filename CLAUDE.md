@@ -7,7 +7,8 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.5: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.5.apk`.
+**0.3.6: compila y pasan 35 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.6.apk`.
+0.3.6: los widgets hacen caso a la ciudad o el puerto elegidos al ponerlos (ver «Trampas de Glance»).
 0.3.5: el icono principal del widget de Tiempo, grande y superpuesto en la esquina (no empuja
 las horas); Netatmo, Sol·Luna y Mareas rehechos con letra fina grande, anillos e iconos mayores y
 menos hueco (Sol·Luna con la duración del día; Mareas con la marea siguiente a la próxima).
@@ -137,6 +138,11 @@ CalefaccionDroid.
 
 - **Una `Column` o `Row` no pinta más de 10 hijos**: el resto desaparece sin aviso (así faltaba el
   quinto día del widget grande). Agrupar en columnas anidadas.
+- **`provideGlance` sólo corre al abrir la sesión**, y la sesión sigue viva un rato: lo que se lea
+  ahí (ciudad, puerto, fondo, datos) se queda viejo aunque se llame a `update()`. Por eso el
+  Sol·Luna no hacía caso a la ciudad elegida al ponerlo. Cada widget lee dentro de
+  `provideContent` con `remember(widgetStamp())`, y `refreshWidget`/`updateAllWidgets` cambian
+  ese sello en el estado de Glance antes de `update()`.
 - Un `Paint` reutilizado tras pintar con alfa conserva ese alfa también con `shader`.
 
 ## Trampas que vienen del original
