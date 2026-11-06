@@ -334,3 +334,6 @@ Sin clave: el tiempo sale de Open-Meteo.	No key: the weather comes from Open-Met
 ✓ AEMET responde	✓ AEMET is responding	✓ AEMET responde	✓ AEMETek erantzuten du	✓ AEMET respon
 La clave caduca el {} (faltan {} días)	The key expires on {} ({} days left)	A clave caduca o {} (faltan {} días)	Gakoa {} iraungiko da ({} egun falta)	La clau caduca el {} (falten {} dies)
 La clave caducó el {}	The key expired on {}	A clave caducou o {}	Gakoa {} iraungi zen	La clau va caducar el {}
+Pleamar {}	High tide {}	Preamar {}	Itsasgora {}	Plenamar {}
+Bajamar {}	Low tide {}	Baixamar {}	Itsasbehera {}	Baixamar {}
+Luna  ↑ {}   ↓ {}	Moon  ↑ {}   ↓ {}	Lúa  ↑ {}   ↓ {}	Ilargia  ↑ {}   ↓ {}	Lluna  ↑ {}   ↓ {}

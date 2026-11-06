@@ -314,3 +314,6 @@ Sin clave: el tiempo sale de Open-Meteo.	Sense clau: el temps surt d'Open-Meteo.
 ✓ AEMET responde	✓ AEMET respon
 La clave caduca el {} (faltan {} días)	La clau caduca el {} (falten {} dies)
 La clave caducó el {}	La clau va caducar el {}
+Pleamar {}	Plenamar {}
+Bajamar {}	Baixamar {}
+Luna  ↑ {}   ↓ {}	Lluna  ↑ {}   ↓ {}

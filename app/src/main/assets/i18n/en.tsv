@@ -326,3 +326,6 @@ Sin clave: el tiempo sale de Open-Meteo.	No key: the weather comes from Open-Met
 ✓ AEMET responde	✓ AEMET is responding
 La clave caduca el {} (faltan {} días)	The key expires on {} ({} days left)
 La clave caducó el {}	The key expired on {}
+Pleamar {}	High tide {}
+Bajamar {}	Low tide {}
+Luna  ↑ {}   ↓ {}	Moon  ↑ {}   ↓ {}

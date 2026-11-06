@@ -330,3 +330,6 @@ Sin clave: el tiempo sale de Open-Meteo.	Gakorik gabe: eguraldia Open-Meteotik d
 ✓ AEMET responde	✓ AEMETek erantzuten du
 La clave caduca el {} (faltan {} días)	Gakoa {} iraungiko da ({} egun falta)
 La clave caducó el {}	Gakoa {} iraungi zen
+Pleamar {}	Itsasgora {}
+Bajamar {}	Itsasbehera {}
+Luna  ↑ {}   ↓ {}	Ilargia  ↑ {}   ↓ {}

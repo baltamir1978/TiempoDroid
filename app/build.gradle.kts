@@ -22,8 +22,8 @@ android {
         applicationId = "es.altamirano.tiempo"
         minSdk = 31          // Android 12
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.3.2"
+        versionCode = 6
+        versionName = "0.3.3"
         buildConfigField("String", "AEMET_API_KEY", localString("aemet.apiKey"))
         // Netatmo (como `Secrets.swift` en iOS): sólo hace falta si no se usa la sesión de Calefacción.
         buildConfigField("String", "NETATMO_CLIENT_ID", localString("netatmo.clientId"))
@@ -56,6 +56,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    testOptions { unitTests { isIncludeAndroidResources = true; all { it.systemProperty("widgets.out", System.getProperty("widgets.out") ?: "") } } }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -80,4 +81,6 @@ dependencies {
     implementation(libs.work.runtime)
     implementation(libs.browser)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

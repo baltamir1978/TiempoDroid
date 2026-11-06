@@ -7,7 +7,18 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (5-nov-2026)
 
-**0.3.2: compila y pasan 31 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.2.apk`. 0.3.2: selector de estación con las 5 más próximas (la lista de AEMET trae una fila por estación y hora: hay que deduplicar), nombres como `shortStationName`, la página dice «AEMET no disponible: …» si cae a Open-Meteo, «Predicción:» en el pie, y Ajustes comprueba la clave y dice cuándo caduca. Si la clave guardada en Ajustes caduca antes que la del APK, manda la del APK.
+**0.3.3: compila y pasan 34 pruebas; sin probar en el móvil.** APK en `~/Documentos/Tiempo-0.3.3.apk`.
+0.3.3: widgets rehechos con el aire de Breezy Weather: iconos del tiempo dibujados por nosotros
+(`widget/WeatherIcons.kt`: sol, luna en su fase, nubes, gotas, copos, rayo, niebla; nada de
+emojis), temperatura grande en letra fina, el aviso como etiqueta y en el grande la curva de seis
+horas. 0.3.2: selector de estación con las 5 más próximas (la lista de AEMET trae una fila por
+estación y hora: hay que deduplicar), «AEMET no disponible: …» en la página si cae a Open-Meteo, y
+Ajustes comprueba la clave y dice cuándo caduca (si la de Ajustes caduca antes que la del APK,
+manda la del APK).
+
+**Ver los widgets sin móvil:** `./gradlew testDebugUnitTest --tests '*WidgetRender*'
+-Dwidgets.out=<carpeta>` los pinta a PNG (Robolectric, Glance → RemoteViews). Las esquinas salen
+rectas y las fechas en inglés sólo ahí.
 
 Hecho, traducido de la app de iOS:
 - **Tiempo**: una página por ubicación (GPS y las que sigues), pasando con el dedo, cada una con
@@ -113,6 +124,12 @@ estación se pide como mucho cada 10 min (es lo que tarda en medir), las gráfic
 10 min (semana) o 1 h, el widget refresca cada hora y la sesión se comparte con CalefaccionDroid.
 Si aun así no basta, la salida es un servidor en casa con los webhooks. Ver el `CLAUDE.md` de
 CalefaccionDroid.
+
+## Trampas de Glance
+
+- **Una `Column` o `Row` no pinta más de 10 hijos**: el resto desaparece sin aviso (así faltaba el
+  quinto día del widget grande). Agrupar en columnas anidadas.
+- Un `Paint` reutilizado tras pintar con alfa conserva ese alfa también con `shader`.
 
 ## Trampas que vienen del original
 
