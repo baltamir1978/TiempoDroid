@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -461,7 +462,8 @@ class WidgetConfigActivity : ComponentActivity() {
                 var city by remember { mutableStateOf(app.settings.widgetCity(id)) }
                 var port by remember { mutableStateOf(app.settings.widgetPort(id) ?: app.settings.tidePort.value) }
                 Surface(Modifier.fillMaxSize()) {
-                    androidx.compose.foundation.lazy.LazyColumn(Modifier.padding(16.dp)) {
+                    // Con targetSdk 35 la ventana va de borde a borde: sin esto el título queda bajo la barra de estado y la cámara.
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.safeDrawingPadding().padding(16.dp)) {
                         item {
                             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                 Text(when (kind) { "netatmo" -> "Widget de Netatmo"; "sunmoon" -> "Widget de Sol·Luna"; "tides" -> "Widget de Mareas"; else -> "Widget de Tiempo" },

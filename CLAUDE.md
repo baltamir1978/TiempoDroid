@@ -7,7 +7,8 @@ carpeta de proyectos; aquí va lo propio de esta.
 
 ## Estado (6-nov-2026)
 
-**0.3.8: compila y pasan las pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.8.apk`.
+**0.3.9: compila y pasan las pruebas. Widgets probados en el móvil (Bruno: «funciona»); el resto, sin probar.** APK en `~/Documentos/Tiempo-0.3.9.apk`.
+0.3.9: la configuración del widget ya no queda bajo la barra de estado y la cámara (`safeDrawingPadding`: con targetSdk 35 todo va de borde a borde).
 0.3.8: en la configuración de cada widget, el interruptor «Color según la temperatura» se guarda al
 momento (antes sólo al tocar una ciudad: al volver atrás se perdía) y **opacidad del fondo** (0–100 %,
 en los cuatro; `LocalWidgetOpacity`, el degradado y la playa se pintan ya con ese alfa); botón «Listo»
