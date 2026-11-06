@@ -321,3 +321,9 @@ Luego: {}	Després: {}
 Día: {}	Dia: {}
 Lluvia mm	Pluja mm
 Opacidad del fondo: {}%	Opacitat del fons: {}%
+Widget de la ubicación actual	Widget de la ubicació actual
+Para que el widget cambie de sitio cuando te mueves sin abrir la app, Android pide dar la ubicación «Permitir siempre».	Perquè el widget canviï de lloc quan et mous sense obrir l’app, Android demana donar la ubicació «Permet sempre».
+Permitir siempre	Permet sempre
+Ahora no	Ara no
+El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	El widget de la ubicació actual només canvia de lloc amb l’app tancada si la ubicació està en «Permet sempre».
+✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Ubicació sempre: el widget segueix la teva posició amb l’app tancada.

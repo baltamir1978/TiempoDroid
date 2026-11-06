@@ -124,6 +124,11 @@ class Settings(context: Context) {
     fun widgetPort(id: Int): String? = prefs.getString("widget-$id-puerto", null)
     fun setWidgetPort(id: Int, port: String) = prefs.edit().putString("widget-$id-puerto", port).apply()
 
+    /** Ya se pidió una vez «Permitir siempre» para el widget (no se insiste). */
+    var askedBackgroundLocation: Boolean
+        get() = prefs.getBoolean("pedida-ubicacion-siempre", false)
+        set(v) { prefs.edit().putBoolean("pedida-ubicacion-siempre", v).apply() }
+
 }
 
 /**
@@ -160,6 +165,28 @@ class LocationStore(private val context: Context, private val places: () -> Plac
     fun byKey(key: String): SavedLocation? = all().firstOrNull { keyOf(it) == key }
 
     fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    /** «Permitir siempre»: sin esto Android no da la ubicación con la app cerrada y el widget no se entera de que te mueves. */
+    fun hasBackgroundPermission() = hasPermission() &&
+        context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Escucha, sin gastar batería, las posiciones que piden otras apps (proveedor pasivo) y las
+     * manda a `LocationReceiver` aunque la app esté cerrada. Se vuelve a pedir en cada arranque
+     * del proceso (un reinicio o una actualización la borran); pedirla otra vez la sustituye.
+     */
+    @SuppressLint("MissingPermission")
+    fun watch() {
+        if (!hasBackgroundPermission()) return
+        val lm = context.getSystemService(LocationManager::class.java)
+        runCatching { lm.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 5 * 60_000L, 250f, es.altamirano.tiempo.widget.LocationReceiver.intent(context)) }
+    }
+
+    /** Resuelve un punto y lo guarda como la ubicación actual. */
+    suspend fun at(lat: Double, lon: Double): SavedLocation? {
+        val loc = withContext(Dispatchers.Default) { resolve(lat, lon) } ?: return null
+        update(loc)
+        return loc
+    }
 
     /**
      * Dónde estás, con `LocationManager` y no con el de Google Play (GrapheneOS): primero lo
@@ -181,9 +208,7 @@ class LocationStore(private val context: Context, private val places: () -> Plac
                 lm.getCurrentLocation(provider, cancel, context.mainExecutor) { cont.resume(it) }
             }
         } ?: providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time } ?: return null
-        val loc = withContext(Dispatchers.Default) { resolve(fix.latitude, fix.longitude) } ?: return null
-        update(loc)
-        return loc
+        return at(fix.latitude, fix.longitude)
     }
 
     /** Municipio y núcleo más cercanos al punto. */

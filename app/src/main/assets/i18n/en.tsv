@@ -333,3 +333,9 @@ Luego: {}	Then: {}
 Día: {}	Day: {}
 Lluvia mm	Rain mm
 Opacidad del fondo: {}%	Background opacity: {}%
+Widget de la ubicación actual	Current location widget
+Para que el widget cambie de sitio cuando te mueves sin abrir la app, Android pide dar la ubicación «Permitir siempre».	For the widget to follow you without opening the app, Android requires location set to “Allow all the time”.
+Permitir siempre	Allow all the time
+Ahora no	Not now
+El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	The current location widget only follows you with the app closed if location is set to “Allow all the time”.
+✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Location all the time: the widget follows you with the app closed.

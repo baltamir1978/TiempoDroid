@@ -214,10 +214,31 @@ private fun WeatherTab(initialPage: Int, onPage: (Int) -> Unit) {
 
     // Al localizar se guarda también lo del widget: si la página de la ubicación actual no está a
     // la vista (o sigue en el mismo municipio), nadie más lo haría y el widget seguiría en el sitio de antes.
-    LaunchedEffect(Unit) {
-        if (app.locations.hasPermission()) app.locations.locate()?.let { l -> app.snapshots.save(l, app.weather.load(l)) }
-        else askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+    // Cada vez que la app vuelve a primer plano, no sólo al crearse: con la app ya abierta en
+    // segundo plano (lo normal), volver a ella no localizaba y el widget seguía en el sitio de antes.
+    var asked by remember { mutableStateOf(false) }
+    var askAlways by remember { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        val job = scope.launch {
+            if (app.locations.hasPermission()) {
+                app.locations.locate()?.let { l -> app.snapshots.save(l, app.weather.load(l)) }
+                app.locations.watch()
+                // Con la app cerrada sólo se sabe dónde estás con «Permitir siempre»: se pide una vez si hay widget de la ubicación actual.
+                if (!app.locations.hasBackgroundPermission() && !app.settings.askedBackgroundLocation &&
+                    es.altamirano.tiempo.widget.widgetsShowCurrent(app)) askAlways = true
+            } else if (!asked) { asked = true; askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
+        }
+        onPauseOrDispose { job.cancel() }
     }
+    val askBackground = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) app.locations.watch() }
+    if (askAlways) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { askAlways = false; app.settings.askedBackgroundLocation = true },
+        title = { Text("Widget de la ubicación actual") },
+        text = { Text("Para que el widget cambie de sitio cuando te mueves sin abrir la app, Android pide dar la ubicación «Permitir siempre».") },
+        confirmButton = { TextButton(onClick = { askAlways = false; app.settings.askedBackgroundLocation = true
+            askBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION) }) { Text("Permitir siempre") } },
+        dismissButton = { TextButton(onClick = { askAlways = false; app.settings.askedBackgroundLocation = true }) { Text("Ahora no") } },
+    )
     if (manage) { BackHandler { manage = false }; LocationsSheet { manage = false }; return }
     if (all.isEmpty()) return
     val pager = rememberPagerState(initialPage.coerceIn(0, all.lastIndex)) { all.size }
@@ -564,6 +585,7 @@ private fun SettingsTab() {
     val scale by app.settings.tempScale.collectAsStateWithLifecycle()
     var draft by remember(key) { mutableStateOf(key) }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    val askAlways = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) app.locations.watch() }
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(horizontal = gutter(), vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("Ajustes", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item {
@@ -626,9 +648,24 @@ private fun SettingsTab() {
                     Text("Ubicación", fontWeight = FontWeight.SemiBold)
                     Text("La ubicación actual se resuelve en el móvil, sin geocodificador: municipio de AEMET más cercano y el pueblo del nomenclátor.",
                         fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (!app.locations.hasPermission()) TextButton(onClick = { askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }) {
-                        Icon(Icons.Filled.MyLocation, null); Text("  Permitir la ubicación")
+                    // Se vuelve a mirar al volver de los ajustes de Android.
+                    var perm by remember { mutableStateOf(app.locations.hasPermission()) }
+                    var always by remember { mutableStateOf(app.locations.hasBackgroundPermission()) }
+                    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+                        perm = app.locations.hasPermission(); always = app.locations.hasBackgroundPermission()
+                        if (always) app.locations.watch()
+                        onPauseOrDispose {}
                     }
+                    if (!perm) TextButton(onClick = { askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }) {
+                        Icon(Icons.Filled.MyLocation, null); Text("  Permitir la ubicación")
+                    } else if (!always) {
+                        Text("El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».",
+                            fontSize = 12.sp, color = Color(0xFFFF9500), modifier = Modifier.padding(top = 6.dp))
+                        TextButton(onClick = { askAlways.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION) }) {
+                            Icon(Icons.Filled.MyLocation, null); Text("  Permitir siempre")
+                        }
+                    } else Text("✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.", fontSize = 12.sp, color = Green,
+                        modifier = Modifier.padding(top = 6.dp))
                 }
             }
         }

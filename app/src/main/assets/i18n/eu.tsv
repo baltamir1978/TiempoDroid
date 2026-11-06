@@ -337,3 +337,9 @@ Luego: {}	Gero: {}
 Día: {}	Eguna: {}
 Lluvia mm	Euria mm
 Opacidad del fondo: {}%	Atzealdearen opakutasuna: %{}
+Widget de la ubicación actual	Uneko kokapenaren widgeta
+Para que el widget cambie de sitio cuando te mueves sin abrir la app, Android pide dar la ubicación «Permitir siempre».	Aplikazioa ireki gabe mugitzean widgetak lekuz alda dezan, Androidek kokapena «Baimendu beti» ematea eskatzen du.
+Permitir siempre	Baimendu beti
+Ahora no	Orain ez
+El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	Uneko kokapenaren widgeta aplikazioa itxita dagoenean lekuz aldatzeko, kokapenak «Baimendu beti» egon behar du.
+✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Kokapena beti: widgetak zure posizioari jarraitzen dio aplikazioa itxita egonda ere.

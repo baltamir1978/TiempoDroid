@@ -534,6 +534,7 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             if (loc.isCurrent) loc = app.locations.locate() ?: loc
             runCatching { app.snapshots.save(loc, app.weather.load(loc)) }
         }
+        app.locations.watch()
         updateAllWidgets(applicationContext)
         return Result.success()
     }
@@ -550,6 +551,61 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     }
 }
 
+/** ¿Algún widget de Tiempo enseña la ubicación actual? (sin ciudad guardada, es la primera). */
+suspend fun widgetsShowCurrent(context: Context): Boolean {
+    val app = context.app
+    val gm = GlanceAppWidgetManager(context)
+    val ids = runCatching { gm.getGlanceIds(WeatherWidget::class.java) }.getOrDefault(emptyList())
+    val first = app.locations.all().firstOrNull()?.let { LocationStore.keyOf(it) }
+    return ids.any { (app.settings.widgetCity(gm.getAppWidgetId(it)) ?: first) == SavedLocation.CURRENT }
+}
+
+/**
+ * Pone al día el widget de la ubicación actual si el sitio ha cambiado (otro pueblo, otro
+ * distrito) o si lo que enseña es de hace más de 3 h. `lat`/`lon`: la posición que llegó al
+ * receptor; sin ellas, se localiza ahora (hace falta «Permitir siempre» con la app cerrada).
+ */
+suspend fun refreshCurrentPlace(context: Context, lat: Double? = null, lon: Double? = null) {
+    val app = context.app
+    if (!widgetsShowCurrent(context)) return
+    val before = app.snapshots.get(SavedLocation.CURRENT)
+    val loc = (if (lat != null && lon != null) app.locations.at(lat, lon) else app.locations.locate()) ?: return
+    val stale = before == null || before.name != loc.name || System.currentTimeMillis() - before.at > 3 * 3600_000L
+    if (stale) runCatching { app.snapshots.save(loc, app.weather.load(loc)) }
+}
+
+/**
+ * Las posiciones del proveedor pasivo (`LocationStore.watch`), con la app cerrada. Lo pesado
+ * (resolver el municipio, pedir el tiempo) va a un trabajo con red, que un receptor tiene sólo
+ * unos segundos.
+ */
+class LocationReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        @Suppress("DEPRECATION")
+        val l = intent.getParcelableExtra<android.location.Location>(android.location.LocationManager.KEY_LOCATION_CHANGED) ?: return
+        val data = androidx.work.workDataOf("lat" to l.latitude, "lon" to l.longitude)
+        WorkManager.getInstance(context).enqueueUniqueWork("ubicacion", androidx.work.ExistingWorkPolicy.REPLACE,
+            androidx.work.OneTimeWorkRequestBuilder<CurrentPlaceWorker>().setInputData(data)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
+    }
+
+    companion object {
+        fun intent(context: Context): android.app.PendingIntent = android.app.PendingIntent.getBroadcast(context, 0,
+            Intent(context, LocationReceiver::class.java),
+            // Mutable: el sistema le añade la posición.
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE)
+    }
+}
+
+class CurrentPlaceWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val lat = inputData.getDouble("lat", Double.NaN).takeUnless { it.isNaN() }
+        val lon = inputData.getDouble("lon", Double.NaN).takeUnless { it.isNaN() }
+        refreshCurrentPlace(applicationContext, lat, lon)
+        return Result.success()
+    }
+}
+
 /**
  * Cada hora: la estación Netatmo si hay su widget (la caché de 10 min frena lo demás; Netatmo
  * limita las consultas periódicas desde marzo de 2027), y Sol·Luna y Mareas, que se calculan
@@ -560,6 +616,9 @@ class HourlyWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val app = applicationContext.app
         val netatmoWidgets = runCatching { GlanceAppWidgetManager(applicationContext).getGlanceIds(NetatmoWidget::class.java) }.getOrDefault(emptyList())
         if (netatmoWidgets.isNotEmpty() && app.netatmo.api.configured) runCatching { app.netatmo.load() }
+        // Cada hora se mira también dónde estás (antes sólo cada 3 h, y con la app cerrada Android no lo decía).
+        if (app.locations.hasBackgroundPermission()) runCatching { refreshCurrentPlace(applicationContext) }
+        app.locations.watch()
         updateAllWidgets(applicationContext)
         return Result.success()
     }

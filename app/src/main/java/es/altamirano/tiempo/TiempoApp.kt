@@ -36,11 +36,17 @@ class TiempoApp : Application() {
         settings = Settings(this)
         locations = LocationStore(this) { places }
         snapshots = WidgetSnapshots(this)
-        weather = WeatherRepo(this, scope, settings, { weather.aemet.stations() }) { locations.update(it) }
+        weather = WeatherRepo(this, scope, settings, { weather.aemet.stations() }) { l ->
+            // La estación encontrada para una ubicación actual que ya no lo es (te has movido mientras
+            // cargaba) devolvía el sitio de antes, y el widget con él.
+            val now = locations.current.value
+            if (!l.isCurrent || now == null || (now.lat == l.lat && now.lon == l.lon)) locations.update(l)
+        }
         tides = Tides(DiskCache(File(cacheDir, "mareas")))
         netatmo = NetatmoRepo(this, Netatmo(this))
         scope.launch(Dispatchers.Default) { places }   // precarga
         es.altamirano.tiempo.widget.RefreshWorker.schedule(this)
+        locations.watch()
     }
 }
 
