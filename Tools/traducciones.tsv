@@ -351,3 +351,32 @@ La clave de AEMET ha caducado: renuévala en Ajustes	The AEMET key has expired: 
 La clave de AEMET caduca hoy: renuévala en Ajustes	The AEMET key expires today: renew it in Settings	A clave de AEMET caduca hoxe: renóvaa en Axustes	AEMETen gakoa gaur iraungiko da: berritu Ezarpenetan	La clau d'AEMET caduca avui: renova-la a Ajustos
 La clave de AEMET caduca mañana: renuévala en Ajustes	The AEMET key expires tomorrow: renew it in Settings	A clave de AEMET caduca mañá: renóvaa en Axustes	AEMETen gakoa bihar iraungiko da: berritu Ezarpenetan	La clau d'AEMET caduca demà: renova-la a Ajustos
 La clave de AEMET caduca en {} días: renuévala en Ajustes	The AEMET key expires in {} days: renew it in Settings	A clave de AEMET caduca en {} días: renóvaa en Axustes	AEMETen gakoa {} egun barru iraungiko da: berritu Ezarpenetan	La clau d'AEMET caduca d'aquí a {} dies: renova-la a Ajustos
+Embalses	Reservoirs	Encoros	Urtegiak	Embassaments
+Mapa	Map	Mapa	Mapa	Mapa
+Favorito	Favourite	Favorito	Gogokoa	Preferit
+Favoritos	Favourites	Favoritos	Gogokoak	Preferits
+No se pudo cargar: {}	Could not load: {}	Non se puido cargar: {}	Ezin izan da kargatu: {}	No s'ha pogut carregar: {}
+Sin conexión: datos guardados	Offline: saved data	Sen conexión: datos gardados	Konexiorik gabe: gordetako datuak	Sense connexió: dades desades
+Buscar embalse	Search reservoir	Buscar encoro	Bilatu urtegia	Cerca un embassament
+Ninguno se llama así	No reservoir by that name	Ningún se chama así	Ez dago izen horretako urtegirik	Cap no es diu així
+Toca la estrella de un embalse para tenerlo aquí.	Tap a reservoir's star to keep it here.	Toca a estrela dun encoro para telo aquí.	Sakatu urtegi baten izarra hemen izateko.	Toca l'estrella d'un embassament per tenir-lo aquí.
+Más cercanos	Nearest	Máis próximos	Hurbilenak	Més propers
+Boletín hidrológico semanal de MITECO (embalses peninsulares de más de 5 hm³). Sale los martes.	MITECO weekly hydrological bulletin (mainland reservoirs over 5 hm³). Published on Tuesdays.	Boletín hidrolóxico semanal do MITECO (encoros peninsulares de máis de 5 hm³). Sae os martes.	MITECOren asteko buletin hidrologikoa (5 hm³-tik gorako penintsulako urtegiak). Asteartetan argitaratzen da.	Butlletí hidrològic setmanal del MITECO (embassaments peninsulars de més de 5 hm³). Surt els dimarts.
+RESERVA HÍDRICA · ESPAÑA	WATER RESERVES · SPAIN	RESERVA HÍDRICA · ESPAÑA	UR-ERRESERBA · ESPAINIA	RESERVA HÍDRICA · ESPANYA
+{} de {} hm³	{} of {} hm³	{} de {} hm³	{2} hm³-tik {1}	{} de {} hm³
+{} hm³ en la última semana	{} hm³ in the last week	{} hm³ na última semana	{} hm³ azken astean	{} hm³ en l'última setmana
+Boletín del {}	Bulletin of {}	Boletín do {}	{} buletina	Butlletí del {}
+Por cuencas	By basin	Por concas	Arroen arabera	Per conques
+{} · hidroeléctrico	{} · hydroelectric	{} · hidroeléctrico	{} · hidroelektrikoa	{} · hidroelèctric
+Comparado con	Compared with	Comparado con	Honekin alderatuta	Comparat amb
+Misma semana de {}	Same week in {}	Mesma semana de {}	{}ko aste bera	Mateixa setmana de {}
+Media de 10 años	10-year average	Media de 10 anos	10 urteko batez bestekoa	Mitjana de 10 anys
+Año hidrológico	Hydrological year	Ano hidrolóxico	Urte hidrologikoa	Any hidrològic
+Este año	This year	Este ano	Aurten	Aquest any
+Año pasado	Last year	Ano pasado	Iaz	L'any passat
+Media 10 años	10-year avg.	Media 10 anos	10 urteko b.b.	Mitjana 10 anys
+Últimas semanas	Recent weeks	Últimas semanas	Azken asteak	Últimes setmanes
+Mapa de embalses	Reservoir map	Mapa de encoros	Urtegien mapa	Mapa d'embassaments
+Ver ficha	Details	Ver ficha	Ikusi fitxa	Veure fitxa
+Embalses: Boletín hidrológico de MITECO	Reservoirs: MITECO hydrological bulletin	Encoros: Boletín hidrolóxico do MITECO	Urtegiak: MITECOren buletin hidrologikoa	Embassaments: Butlletí hidrològic del MITECO
+Mapa: © colaboradores de OpenStreetMap	Map: © OpenStreetMap contributors	Mapa: © colaboradores de OpenStreetMap	Mapa: © OpenStreetMap-en laguntzaileak	Mapa: © col·laboradors d'OpenStreetMap

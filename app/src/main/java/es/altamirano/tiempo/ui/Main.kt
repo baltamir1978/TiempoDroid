@@ -20,6 +20,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Water
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
@@ -159,7 +160,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private const val TAB_WEATHER = 0; private const val TAB_COSMOS = 1; private const val TAB_ACTUAL = 2; private const val TAB_SETTINGS = 3
+private const val TAB_WEATHER = 0; private const val TAB_COSMOS = 1; private const val TAB_ACTUAL = 2; private const val TAB_SETTINGS = 3; private const val TAB_EMBALSES = 4
 
 @Composable
 private fun Root() {
@@ -183,6 +184,7 @@ private fun Root() {
     val aemetKey by app.settings.aemetKey.collectAsStateWithLifecycle()
     val items = listOfNotNull(Triple(if (aemetKey.isNotBlank()) "AEMET" else "Tiempo", Icons.Filled.Cloud, TAB_WEATHER),
         Triple("Sol·Luna", Icons.Filled.Brightness4, TAB_COSMOS),
+        Triple("Embalses", Icons.Filled.Water, TAB_EMBALSES),
         // La pestaña de Netatmo sólo sale con Netatmo configurado, al final de la barra.
         if (netatmoOn) Triple("Actual", Icons.Filled.Thermostat, TAB_ACTUAL) else null,
         Triple("Ajustes", Icons.Filled.Settings, TAB_SETTINGS)).map { (label, icon, i) ->
@@ -193,6 +195,7 @@ private fun Root() {
             TAB_WEATHER -> WeatherTab(page) { page = it }
             TAB_COSMOS -> CosmosTab(page, tidesSignal)
             TAB_ACTUAL -> ActualTab()
+            TAB_EMBALSES -> EmbalsesTab()
             else -> SettingsTab()
         }
     }
@@ -676,7 +679,7 @@ private fun SettingsTab() {
                     Text("Datos", fontWeight = FontWeight.SemiBold)
                     listOf("Predicción, observaciones y avisos: © AEMET", "Sin clave, y aire, polen y UV: Open-Meteo (CC BY 4.0)",
                         "Mareas: © Instituto Hidrográfico de la Marina", "Portugal: IPMA (previsión, observaciones y avisos)", "Pueblos y aldeas: GeoNames (CC BY 4.0)",
-                        "Municipios: maestro de municipios de AEMET").forEach { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        "Municipios: maestro de municipios de AEMET", "Embalses: Boletín hidrológico de MITECO", "Mapa: © colaboradores de OpenStreetMap").forEach { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }

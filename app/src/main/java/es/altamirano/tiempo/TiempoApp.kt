@@ -26,6 +26,7 @@ class TiempoApp : Application() {
     lateinit var tides: Tides; private set
     lateinit var snapshots: WidgetSnapshots; private set
     lateinit var netatmo: NetatmoRepo; private set
+    val embalses: es.altamirano.tiempo.data.EmbalsesRepo by lazy { es.altamirano.tiempo.data.EmbalsesRepo(this) }
 
     /** Municipios y nomenclátor: ~40.000 líneas, se cargan una vez y en segundo plano. */
     val places: Places by lazy { assets.open("Municipios.tsv").use { m -> assets.open("Nucleos.tsv").use { n -> assets.open("Recintos.bin").use { r -> assets.open("Distritos.tsv").use { d -> Places(m, n, r, d) } } } } }

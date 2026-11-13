@@ -7,8 +7,8 @@ Versión para Android de [Tiempo ES](https://github.com/baltamir1978/AEMET-Netat
 escrita desde cero en Kotlin + Jetpack Compose. Funciona sin Google Play (GrapheneOS): ubica y
 busca sin geocodificador, con el nomenclátor y los términos municipales dentro de la app.
 
-**Estado: 0.3.13** (13-nov-2026): está todo lo de la app de iOS. Los widgets ya se han probado en el
-móvil; el resto, todavía no. Ver `CLAUDE.md`.
+**Estado: 0.4** (13-nov-2026): está todo lo de la app de iOS y, además, los embalses. Los widgets ya
+se han probado en el móvil; el resto, todavía no. Ver `CLAUDE.md`.
 
 ## Qué hace
 
@@ -26,6 +26,8 @@ móvil; el resto, todavía no. Ver `CLAUDE.md`.
 - Aire, polen y UV.
 - **Sol y luna** (orto, ocaso, fase, calendario lunar, eventos astronómicos y una fecha a
   elegir) y **mareas del IHM** en la hora del puerto.
+- **Embalses**: la reserva de España y por cuencas, tus favoritos, los más cercanos, la ficha de
+  cada uno (frente al año pasado y a la media de 10 años) y un mapa, con el boletín semanal de MITECO.
 - **Netatmo**: tu estación meteorológica (interior, exterior y pluviómetro) en la pestaña
   Actual, con gráficas al tocar cada medida. Usa la sesión de **Calefacción** si la tienes
   instalada; si no, la suya propia. La estación se pide como mucho cada 10 minutos.
@@ -71,5 +73,6 @@ Traducciones: `Tools/traducciones.tsv` (la clave es el español) → `python3 To
 ## Datos
 
 © AEMET · IPMA · Open-Meteo (CC BY 4.0) · © Instituto Hidrográfico de la Marina · Netatmo ·
+embalses del Boletín hidrológico de MITECO · mapa © colaboradores de OpenStreetMap ·
 pueblos y aldeas de [GeoNames](https://www.geonames.org/) (CC BY 4.0) · términos municipales del
 IGN (es-atlas, CC BY 4.0) · contorno de Portugal de Natural Earth (dominio público).
