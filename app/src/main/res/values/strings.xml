@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Tiempo ES</string>
+    <string name="app_name" translatable="false">Tiempo ES</string>
     <string name="widget_weather_label">Tiempo</string>
     <string name="widget_sunmoon_label">Sol y Luna</string>
     <string name="widget_tides_label">Mareas</string>

@@ -1,11 +1,10 @@
 package es.altamirano.tiempo.net
 
+import es.altamirano.common.secure.SecureFile
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import es.altamirano.tiempo.BuildConfig
 import es.altamirano.tiempo.core.NetatmoApiError
 import es.altamirano.tiempo.core.NetatmoDevice
@@ -29,58 +28,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import java.io.File
 import java.io.IOException
-import java.security.KeyStore
 import java.security.MessageDigest
 import java.util.UUID
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 
 private const val API = "https://api.netatmo.com"
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-
-/**
- * Un fichero cifrado con una clave AES del Android Keystore (como en Calefacción): las
- * credenciales y el `refresh_token` de Netatmo no quedan en claro en el móvil. Se escribe a un
- * temporal y se renombra, que el `refresh_token` cambia en cada renovación y perderlo es perder
- * la sesión.
- */
-class SecureFile(context: Context, name: String) {
-    private val file = File(context.noBackupFilesDir, name)
-
-    private fun key(): SecretKey {
-        val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        (ks.getKey(ALIAS, null) as? SecretKey)?.let { return it }
-        val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-        gen.init(KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256).build())
-        return gen.generateKey()
-    }
-
-    @Synchronized
-    fun read(): String? = try {
-        if (!file.exists()) null else {
-            val b = file.readBytes()
-            val c = Cipher.getInstance("AES/GCM/NoPadding")
-            c.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, b, 1, b[0].toInt()))
-            String(c.doFinal(b, 1 + b[0], b.size - 1 - b[0]))
-        }
-    } catch (e: Exception) { null }
-
-    @Synchronized
-    fun write(text: String) {
-        val c = Cipher.getInstance("AES/GCM/NoPadding")
-        c.init(Cipher.ENCRYPT_MODE, key())
-        val iv = c.iv
-        val tmp = File(file.parentFile, file.name + ".tmp")
-        tmp.writeBytes(byteArrayOf(iv.size.toByte()) + iv + c.doFinal(text.toByteArray()))
-        tmp.renameTo(file)
-    }
-
-    private companion object { const val ALIAS = "tiempo" }
-}
 
 /** Lo propio de Tiempo: credenciales de dev.netatmo.com y su sesión (`AppConfiguration`). */
 @Serializable
@@ -132,10 +84,10 @@ class SharedSession(private val context: Context) {
     companion object {
         const val AUTHORITY = "es.altamirano.calefaccion.netatmo"
         const val CALEFACCION = "es.altamirano.calefaccion"
-        /** SHA-256 del certificado de release de Calefacción y del de depuración de este equipo. */
-        val CALEFACCION_CERTS = setOf(
+        /** SHA-256 del certificado de release de Calefacción; el de depuración de este equipo, sólo al depurar. */
+        val CALEFACCION_CERTS = setOfNotNull(
             "B9BDC5D8F4389F719D0DF38DE8F18F9F065DA8A2FA155F87F1241EA5E99937F1",
-            "1389502CE36317BFB67513DF22DD4033809FE39B1183D67B295C0E26814BFA53",
+            "1389502CE36317BFB67513DF22DD4033809FE39B1183D67B295C0E26814BFA53".takeIf { BuildConfig.DEBUG },
         )
 
         fun signedBy(context: Context, pkg: String, certs: Set<String>): Boolean = runCatching {
@@ -159,11 +111,15 @@ sealed class NetatmoError(message: String) : Exception(message) {
  * tarda en medir) y la respuesta se guarda en disco, la misma para la app y el widget.
  */
 class Netatmo(private val context: Context) {
-    private val store = SecureFile(context, "netatmo.bin")
+    private val store = SecureFile(context, "netatmo.bin", alias = "tiempo")
     val shared = SharedSession(context)
     private val cache = DiskCache(File(context.cacheDir, "netatmo"))
     private val refreshLock = Mutex()
-    private var pendingState: String? = null
+    private val stateFile = SecureFile(context, "netatmo-oauth-state.bin", alias = "tiempo")
+    /** En disco: Android puede matar la app mientras se inicia sesión en el navegador. */
+    private var pendingState: String?
+        get() = stateFile.read()
+        set(value) { if (value == null) stateFile.clear() else stateFile.write(value) }
 
     private val _account = MutableStateFlow(load())
     val account: StateFlow<NetatmoAccount> = _account.asStateFlow()
@@ -199,7 +155,9 @@ class Netatmo(private val context: Context) {
     suspend fun handleCallback(uri: Uri) {
         uri.getQueryParameter("error")?.let { throw NetatmoError.OAuth(it) }
         val code = uri.getQueryParameter("code") ?: throw NetatmoError.OAuth("No llegó el código de autorización")
-        if (pendingState != null && uri.getQueryParameter("state") != pendingState) throw NetatmoError.OAuth("El parámetro «state» no coincide")
+        val expected = pendingState
+        pendingState = null
+        if (expected == null || uri.getQueryParameter("state") != expected) throw NetatmoError.OAuth("El parámetro «state» no coincide")
         val a = _account.value
         save(token(a, mapOf("grant_type" to "authorization_code", "client_id" to a.clientId, "client_secret" to a.clientSecret,
             "code" to code, "redirect_uri" to REDIRECT_URI, "scope" to SCOPE)))

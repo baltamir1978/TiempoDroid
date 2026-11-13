@@ -82,6 +82,24 @@ fun aemetKeyExpiry(key: String): Long? = runCatching {
     Regex("\"exp\"\\s*:\\s*(\\d+)").find(payload)!!.groupValues[1].toLong()
 }.getOrNull()
 
+/**
+ * El aviso de que la clave de AEMET se acaba, para la página del tiempo: desde 14 días antes.
+ * Caducada, AEMET contesta 401 a todo y la app tira de Open-Meteo sin decir por qué.
+ */
+fun aemetKeyWarning(key: String, nowMs: Long = System.currentTimeMillis()): String? {
+    val exp = aemetKeyExpiry(key) ?: return null
+    val zone = java.time.ZoneId.systemDefault()
+    val left = java.time.temporal.ChronoUnit.DAYS.between(
+        java.time.Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate(), java.time.Instant.ofEpochSecond(exp).atZone(zone).toLocalDate())
+    return when {
+        exp * 1000 <= nowMs -> "La clave de AEMET ha caducado: renuévala en Ajustes"
+        left > 14 -> null
+        left <= 0L -> "La clave de AEMET caduca hoy: renuévala en Ajustes"
+        left == 1L -> "La clave de AEMET caduca mañana: renuévala en Ajustes"
+        else -> "La clave de AEMET caduca en $left días: renuévala en Ajustes"
+    }
+}
+
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
     // La de Ajustes manda, salvo que la del APK caduque más tarde (una clave guardada en la app

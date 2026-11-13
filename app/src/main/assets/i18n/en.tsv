@@ -339,3 +339,7 @@ Permitir siempre	Allow all the time
 Ahora no	Not now
 El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	The current location widget only follows you with the app closed if location is set to “Allow all the time”.
 ✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Location all the time: the widget follows you with the app closed.
+La clave de AEMET ha caducado: renuévala en Ajustes	The AEMET key has expired: renew it in Settings
+La clave de AEMET caduca hoy: renuévala en Ajustes	The AEMET key expires today: renew it in Settings
+La clave de AEMET caduca mañana: renuévala en Ajustes	The AEMET key expires tomorrow: renew it in Settings
+La clave de AEMET caduca en {} días: renuévala en Ajustes	The AEMET key expires in {} days: renew it in Settings

@@ -343,3 +343,7 @@ Permitir siempre	Baimendu beti
 Ahora no	Orain ez
 El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	Uneko kokapenaren widgeta aplikazioa itxita dagoenean lekuz aldatzeko, kokapenak «Baimendu beti» egon behar du.
 ✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Kokapena beti: widgetak zure posizioari jarraitzen dio aplikazioa itxita egonda ere.
+La clave de AEMET ha caducado: renuévala en Ajustes	AEMETen gakoa iraungi da: berritu Ezarpenetan
+La clave de AEMET caduca hoy: renuévala en Ajustes	AEMETen gakoa gaur iraungiko da: berritu Ezarpenetan
+La clave de AEMET caduca mañana: renuévala en Ajustes	AEMETen gakoa bihar iraungiko da: berritu Ezarpenetan
+La clave de AEMET caduca en {} días: renuévala en Ajustes	AEMETen gakoa {} egun barru iraungiko da: berritu Ezarpenetan

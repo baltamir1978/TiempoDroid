@@ -1,0 +1,44 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # El código compartido va en otro repositorio y se incluye desde la carpeta de al lado.
+      - uses: actions/checkout@v4
+        with:
+          path: TiempoDroid
+      - uses: actions/checkout@v4
+        with:
+          repository: baltamir1978/droid-common
+          path: droid-common
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      # Sin claves ni secretos: la app compila igual (AEMET cae a Open-Meteo, Netatmo se configura en Ajustes).
+      - name: Pruebas, lint y APK de depuración
+        working-directory: TiempoDroid
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --console=plain
+      - name: Informe de lint
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes
+          path: |
+            TiempoDroid/app/build/reports/
+          retention-days: 7

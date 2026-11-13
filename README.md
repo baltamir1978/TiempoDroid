@@ -7,7 +7,7 @@ Versión para Android de [Tiempo ES](https://github.com/baltamir1978/AEMET-Netat
 escrita desde cero en Kotlin + Jetpack Compose. Funciona sin Google Play (GrapheneOS): ubica y
 busca sin geocodificador, con el nomenclátor y los términos municipales dentro de la app.
 
-**Estado: 0.3.12** (6-nov-2026): está todo lo de la app de iOS. Los widgets ya se han probado en el
+**Estado: 0.3.13** (13-nov-2026): está todo lo de la app de iOS. Los widgets ya se han probado en el
 móvil; el resto, todavía no. Ver `CLAUDE.md`.
 
 ## Qué hace
@@ -15,7 +15,8 @@ móvil; el resto, todavía no. Ver `CLAUDE.md`.
 - Predicción por horas y días, con la curva de temperatura y la lluvia de las próximas 48 h,
   temperatura de la estación de AEMET (la más cercana o una de las cinco más próximas, con su
   distancia y altitud) y **avisos** de AEMET.
-- Si AEMET no contesta, la página lo dice; **Ajustes comprueba la clave** y avisa de cuándo caduca.
+- Si AEMET no contesta, la página lo dice; **Ajustes comprueba la clave** y avisa de cuándo caduca,
+  y desde dos semanas antes lo recuerda también la página del tiempo.
 - **Sin clave de AEMET, todo sale de Open-Meteo** con la misma pantalla.
 - **Portugal con el IPMA** (sin clave): previsión, observaciones y avisos; lejos de sus 35
   localidades, Open-Meteo con tu punto exacto (se puede elegir).
@@ -48,8 +49,13 @@ netatmo.clientId=…
 netatmo.clientSecret=…
 netatmo.refreshToken=…
 X
-./gradlew testDebugUnitTest assembleRelease
+./gradlew testDebugUnitTest lintDebug assembleRelease
 ```
+
+Hace falta clonar también [droid-common](https://github.com/baltamir1978/droid-common) **en la
+carpeta de al lado** (`../droid-common`): el código que comparten las apps de Android, que Gradle
+incluye desde ahí. En cada push, GitHub Actions pasa las pruebas y el lint
+(`.github/workflows/android.yml`).
 
 Para iniciar sesión en Netatmo desde Tiempo (sin Calefacción), la app de dev.netatmo.com tiene
 que tener la Redirect URI `tiempo-netatmo://oauth-callback`; si no, se pega un refresh token.

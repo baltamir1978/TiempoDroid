@@ -89,5 +89,5 @@ fun Text(
     lineHeight: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
     overflow: androidx.compose.ui.text.style.TextOverflow = androidx.compose.ui.text.style.TextOverflow.Clip,
     maxLines: Int = Int.MAX_VALUE, style: androidx.compose.ui.text.TextStyle = androidx.compose.material3.LocalTextStyle.current,
-) = androidx.compose.material3.Text(es.altamirano.tiempo.core.tr(text), modifier, color, fontSize, fontStyle, fontWeight,
-    letterSpacing = letterSpacing, textAlign = textAlign, lineHeight = lineHeight, overflow = overflow, maxLines = maxLines, style = style)
+) = androidx.compose.material3.Text(es.altamirano.tiempo.core.tr(text), modifier, color, fontSize = fontSize,
+    fontStyle = fontStyle, fontWeight = fontWeight, letterSpacing = letterSpacing, textAlign = textAlign, lineHeight = lineHeight, overflow = overflow, maxLines = maxLines, style = style)

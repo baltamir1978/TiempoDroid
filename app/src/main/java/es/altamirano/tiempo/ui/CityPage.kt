@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -540,6 +541,8 @@ private fun SourceFooter(w: CityWeather) {
             w.source == "AEMET" -> "© AEMET"; w.source == null -> "—"; w.source.startsWith("IPMA") -> "© ${w.source}"; else -> "Open-Meteo (CC BY 4.0)" },
             fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         w.error?.let { Text(it, fontSize = 11.sp, color = Color(0xFFFF9500)) }
+        val key by LocalContext.current.app.settings.aemetKey.collectAsState()
+        es.altamirano.tiempo.data.aemetKeyWarning(key)?.let { Text(it, fontSize = 11.sp, color = Color(0xFFFF9500)) }
         Spacer(Modifier.height(8.dp))
     }
 }

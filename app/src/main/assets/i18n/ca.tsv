@@ -327,3 +327,7 @@ Permitir siempre	Permet sempre
 Ahora no	Ara no
 El widget de la ubicación actual sólo cambia de sitio con la app cerrada si la ubicación está en «Permitir siempre».	El widget de la ubicació actual només canvia de lloc amb l’app tancada si la ubicació està en «Permet sempre».
 ✓ Ubicación siempre: el widget sigue tu posición con la app cerrada.	✓ Ubicació sempre: el widget segueix la teva posició amb l’app tancada.
+La clave de AEMET ha caducado: renuévala en Ajustes	La clau d'AEMET ha caducat: renova-la a Ajustos
+La clave de AEMET caduca hoy: renuévala en Ajustes	La clau d'AEMET caduca avui: renova-la a Ajustos
+La clave de AEMET caduca mañana: renuévala en Ajustes	La clau d'AEMET caduca demà: renova-la a Ajustos
+La clave de AEMET caduca en {} días: renuévala en Ajustes	La clau d'AEMET caduca d'aquí a {} dies: renova-la a Ajustos
