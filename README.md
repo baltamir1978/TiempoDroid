@@ -7,7 +7,7 @@ Versión para Android de [Tiempo ES](https://github.com/baltamir1978/AEMET-Netat
 escrita desde cero en Kotlin + Jetpack Compose. Funciona sin Google Play (GrapheneOS): ubica y
 busca sin geocodificador, con el nomenclátor y los términos municipales dentro de la app.
 
-**Estado: 0.3.9** (6-nov-2026): está todo lo de la app de iOS. Los widgets ya se han probado en el
+**Estado: 0.3.12** (6-nov-2026): está todo lo de la app de iOS. Los widgets ya se han probado en el
 móvil; el resto, todavía no. Ver `CLAUDE.md`.
 
 ## Qué hace
@@ -31,7 +31,11 @@ móvil; el resto, todavía no. Ver `CLAUDE.md`.
 - **Cuatro widgets**: Tiempo (2×2, 4×2 y 4×4), Netatmo, Sol·Luna y Mareas, con la ciudad, el
   puerto, el fondo y su opacidad a elegir, y seis escalas de color según la temperatura. Iconos del tiempo
   dibujados por la app (sol, luna en su fase, nubes, lluvia, nieve, tormenta, niebla), la lluvia
-  marcada en azul y, en el grande, la curva de seis horas.
+  marcada en azul y, en el grande, la curva de seis horas. El widget de la ubicación actual
+  sigue tu posición: se actualiza al volver a la app y, con «Permitir siempre», también con la
+  app cerrada.
+- **Modo escritorio** (pantallas grandes y ventanas): riel de navegación, contenido centrado,
+  flechas para pasar de ciudad y sin recrearse al cambiar el tamaño de la ventana.
 - Español, inglés, gallego, euskera y catalán.
 
 ## Compilar
